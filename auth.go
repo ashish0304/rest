@@ -1,7 +1,7 @@
 package main
 
 import (
-  "fmt"
+  _"fmt"
   _"math"
 	 "net/http"
   "strconv"
@@ -11,8 +11,6 @@ import (
 	 "github.com/dgrijalva/jwt-go"
  	"github.com/gin-gonic/gin"
 )
-
-const keySecret="gaderia"
 
 func AuthRead(c *gin.Context) {
   //c.Next()
@@ -24,12 +22,12 @@ func AuthRead(c *gin.Context) {
     return
   }
   //fmt.Println(ck)
-  cl, err1 := parseToken(ck.Value)
+  _, err1 := parseToken(ck.Value)
   if err1 != nil {
     c.AbortWithStatus(401)
     return
   }
-  fmt.Println(cl)
+  //fmt.Println(cl)
   c.Next()
 }
 
@@ -45,7 +43,8 @@ func AuthWrite(c *gin.Context) {
     c.AbortWithStatus(401)
     return
   }
-  fmt.Println(cl.(jwt.MapClaims)["acc"].(float64))
+  //fmt.Println(cl.(jwt.MapClaims)["acc"].(float64))
+  c.Set("usr_id", cl.(jwt.MapClaims)["usr"])
   c.Next()
 }
 

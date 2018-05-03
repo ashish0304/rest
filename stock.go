@@ -46,13 +46,16 @@ func stocks(c *gin.Context) {
   }
   sTax += " order by description"
   err = DB.Select(&stock, `select stock.itm_id, item.description,
-           item.hsn, stock.quantity, item.cost from stock
-           left join item on stock.itm_id=item.id
-           where stock.quantity != 0 and lcn_id=?` + sTax, lc)
+           item.hsn, stock.quantity, coalesce(a.rate, item.cost) as cost
+           from stock left join item on stock.itm_id=item.id
+           left join (select max(date),itm_id,rate from stktran
+             where lcn_id=? and type='P' group by itm_id) as 'a' on stock.itm_id=a.itm_id
+           where stock.quantity != 0 and lcn_id=?` + sTax, lc, lc)
   if err == nil{
     c.JSON(200, stock)
   }else{
+    fmt.Println(err)
     c.JSON(404, err)
   }
 }
-
+//select max(date),itm_id,rate from stktran where lcn_id=1 and type='P' group by itm_id;

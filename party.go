@@ -2,7 +2,6 @@ package main
 
 import (
   "fmt"
-  "strconv"
   "net/http"
   "github.com/gin-gonic/gin"
 )
@@ -18,22 +17,6 @@ type Party struct{
 type PartyAcc struct{
   Id int `db:"id" json:"id"`
   Description string `db:"description" json:"description"`
-}
-
-type PartyPmts struct{
-  Type string `db:"type" json:"type"`
-  Date string `db:"date" json:"date"`
-  Account string `db:"account" json:"account"`
-  Amount float32 `db:"amount" json:"amount"`
-  Comment NullString `db:"comment" json:"comment"`
-}
-
-type PartyItms struct{
-  Type string `db:"type" json:"type"`
-  Date string `db:"date" json:"date"`
-  Item string `db:"item" json:"item"`
-  Quantity int32 `db:"quantity" json:"quantity"`
-  Rate float32 `db:"rate" json:"rate"`
 }
 
 func parties(c *gin.Context) {
@@ -119,42 +102,6 @@ func partyupdate(c *gin.Context) {
     c.JSON(400, err)
   }else{
     c.JSON(200, party)
-  }
-}
-
-func prtpayments(c *gin.Context) {
-  id := c.Param("id")
-  offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-  if e1 != nil { offset = 0}
-  limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-  if e2 != nil { limit = 10}
-  pmts := []PartyPmts{}
-  err := DB.Select(&pmts, `select type, strftime('%d-%m-%Y', date) as date,
-         account.description as account, amount, comment
-         from pmttran left join account on acc_id=account.id where prt_id=? order by strftime('%Y-%m-%d', date) desc limit ? offset ?`, id, limit, offset)
-  if err != nil {
-    c.JSON(400, err)
-    //fmt.Println(err)
-  }else{
-    c.JSON(200, pmts)
-  }
-}
-
-func prtitems(c *gin.Context) {
-  id := c.Param("id")
-  offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-  if e1 != nil { offset = 0}
-  limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-  if e2 != nil { limit = 10}
-  itms := []PartyItms{}
-  err := DB.Select(&itms, `select type, strftime('%d-%m-%Y', date) as date,
-         item.description as item, quantity, rate
-         from stktran left join item on itm_id=item.id where prt_id=? order by strftime('%Y-%m-%d', date) desc limit ? offset ?`, id, limit, offset)
-  if err != nil {
-    c.JSON(400, err)
-    //fmt.Println(err)
-  }else{
-    c.JSON(200, itms)
   }
 }
 

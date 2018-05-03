@@ -1,16 +1,27 @@
 package main
 
 import (
+  "os"
+  "fmt"
   "github.com/jmoiron/sqlx"
   _"github.com/mattn/go-sqlite3"
   "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/contrib/static"
 )
 
+var keySecret string
 var Router *gin.Engine
 var DB *sqlx.DB
 
 func main() {
-  DB = sqlx.MustConnect("sqlite3", "../myshop.db3")
+  keySecret = os.Getenv("SERVERKEY")
+  port := os.Getenv("SERVERPORT")
+  if len(keySecret) < 2 || len(port) < 4{
+    fmt.Println("ERROR: Environment variable SERVERKEY or SERVERPORT is not defined")
+    os.Exit(1)
+  }
+
+  DB = sqlx.MustConnect("sqlite3", "/sdcard/myshop/myshop.db3")
   defer DB.Close()
   DB.Exec("PRAGMA foreign_keys = ON;")
   Router = gin.Default()
@@ -21,9 +32,9 @@ func main() {
   authWrite := Router.Group("/api")
   authWrite.Use(AuthWrite)
 
-  //Router.Static("/static", "../myshop/dist/static")
+  Router.Use(static.Serve("/", static.LocalFile("./static", true)))
+
   authRead.GET("/items", items)
-  authRead.GET("/items/:desc", itemsdesc)
   authRead.GET("/item/:id", itemid)
   authRead.GET("/item/:id/trans", itemtran)
   authWrite.POST("/item", itemadd)
@@ -62,6 +73,6 @@ func main() {
 
   Router.POST("/api/login", login)
   Router.GET("/api/logout", logout)
-  //Router.StaticFile("/", "../myshop/dist/index.html")
-  Router.Run("0.0.0.0:8181")
+
+  Router.Run("0.0.0.0:" + port)
 }

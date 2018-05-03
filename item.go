@@ -2,7 +2,6 @@ package main
 
 import (
   "fmt"
-  "strconv"
   "net/http"
   "github.com/gin-gonic/gin"
 )
@@ -16,16 +15,10 @@ type Item struct {
   Tax float32 `db:"tax" json:"tax" `
 }
 
-type ItemTran struct{
-  Type string `db:"type" json:"type"`
-  Date string `db:"date" json:"date"`
-  Quantity int32 `db:"quantity" json:"quantity"`
-  Rate float32 `db:"rate" json:"rate"`
-}
-
 func items(c *gin.Context) {
+  desc := "%" + c.Request.URL.Query().Get("desc") + "%"
   items:=[]Item{}
-  err := DB.Select(&items, "select * from item")
+  err := DB.Select(&items, "select * from item where description like ?", desc)
   if err == nil{
     c.JSON(200, items)
   }else{
@@ -33,7 +26,7 @@ func items(c *gin.Context) {
   }
 }
 
-func itemsdesc(c *gin.Context) {
+/*func itemsdesc(c *gin.Context) {
   desc := "%"+c.Param("desc")+"%"
   items := []Item{}
   err := DB.Select(&items, "select * from item where description like ?", desc)
@@ -42,7 +35,7 @@ func itemsdesc(c *gin.Context) {
   }else{
     c.JSON(404, err)
   }
-}
+}*/
 
 func itemid(c *gin.Context) {
   id := c.Param("id")
@@ -93,19 +86,3 @@ func itemupdate(c *gin.Context) {
   }
 }
 
-func itemtran(c *gin.Context) {
-  id := c.Param("id")
-  offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-  if e1 != nil { offset = 0}
-  limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-  if e2 != nil { limit = 10}
-  trns := []ItemTran{}
-  err := DB.Select(&trns, `select type, strftime('%d-%m-%Y', date) as date,
-         quantity, rate from stktran where itm_id=? order by strftime('%Y-%m-%d', date) desc limit ? offset ?`, id, limit, offset)
-  if err != nil {
-    c.JSON(400, err)
-    //fmt.Println(err)
-  }else{
-    c.JSON(200, trns)
-  }
-}
