@@ -243,7 +243,7 @@ func stktran(c *gin.Context) {
         _, err = stStockIns.Exec(stktran.Tgt_lcn_id, stk.Itm_id, stk.Quantity, stk.Quantity)
         if err != nil {goto error}
       }
-      if stktran.Flg_cost {
+      if stktran.Flg_cost && stk.Quantity > 0{
         _, err = stItmUpd.Exec(stk.Rate * fCostPerc, stk.Itm_id)
       }
       if err != nil {goto error}
