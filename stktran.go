@@ -117,6 +117,7 @@ func stktran(c *gin.Context) {
   
   //get usr id from context
   stktran.Usr_id = c.MustGet("usr_id").(string)
+  fmt.Println(stktran.Usr_id)
   var acc, prt uint32
   if stktran.PrtAcc_id < 0 {
     acc = uint32(stktran.PrtAcc_id * -1)
