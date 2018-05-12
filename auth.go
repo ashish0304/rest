@@ -44,7 +44,7 @@ func AuthWrite(c *gin.Context) {
     return
   }
   //fmt.Println(cl.(jwt.MapClaims)["acc"].(float64))
-  c.Set("usr_id", cl.(jwt.MapClaims)["usr"])
+  c.Set("usr_id", cl.(jwt.MapClaims)["usr"].(string))
   c.Next()
 }
 
