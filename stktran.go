@@ -149,7 +149,7 @@ func stktran(c *gin.Context) {
   
   var fCostPerc float32=1
   if (stktran.Expense + stktran.Prt_exp) > 0 {
-    fCostPerc += (((stktran.Expense + stktran.Prt_exp)/(stktran.Total/100))/100) + 1
+    fCostPerc += (((stktran.Expense + stktran.Prt_exp)/(stktran.Total/100))/100)
     fCostPerc += .002  //amount transfer charges
     //fmt.Print(fCostPerc)
   }
