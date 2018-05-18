@@ -439,7 +439,7 @@ func replcnstat(c *gin.Context) {
   err := DB.Select(&repLocn, `
          select (type || ':' || round((tax/(value/100)),1)) as type,
          round(sum(value), 2) as amount, round(sum(tax), 2) as tax from stktran
-         where lcn_id=? and tax<>0 and strftime('%Y-%m', date, 'unixepoch')=?
+         where lcn_id=? and strftime('%Y-%m', date, 'unixepoch')=?
          group by type, round((tax/(value/100)),1)
          order by type
          `, locn, mnth)
