@@ -281,8 +281,10 @@ func stktran(c *gin.Context) {
     if acc > 0 {
       _, err = stAccUpd.Exec(fTranValue + exp * -1, acc)
       if err != nil {goto error}
-      _, err = stPmttran.Exec(tid, stktran.Type, stktran.Date, acc, nil, fTranValue)
-      if err != nil {goto error}
+      if !dummyLcn {
+        _, err = stPmttran.Exec(tid, stktran.Type, stktran.Date, acc, nil, fTranValue)
+        if err != nil {goto error}
+      }
       if exp != 0 {
         _, err = stPmttran.Exec(tid, "B", stktran.Date, acc, nil, exp * -1)
         if err != nil {goto error}
