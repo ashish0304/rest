@@ -63,6 +63,13 @@ func main() {
   authRead.GET("/stock/:lc/:it", stock)
   authRead.GET("/stocks/:lc/:ta", stocks)
 
+  authRead.GET("/inventory", invs)
+  authRead.POST("/inventory", invsadd)
+  authRead.PUT("/inventory", invsdel)
+  authRead.PUT("/clrstk", clrstk)
+  authRead.PUT("/expinv", expinv)
+  authRead.PUT("/clrinv", clrinv)
+
   authWrite.POST("/stktran", stktran)
   authRead.GET("/repdateitm", repdateitm)
   authRead.GET("/replcnstat", replcnstat)
