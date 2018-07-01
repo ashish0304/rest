@@ -47,6 +47,7 @@ type Stkrep struct {
   Description string `json:"description" db:"description"`
   Quantity int32 `json:"quantity" db:"quantity"`
   Rate float32 `json:"rate" db:"rate"`
+  Cost float32 `json:"cost" db:"cost"`
 }
 
 type Amtrep struct {
@@ -344,12 +345,12 @@ func repdateitm(c *gin.Context) {
   dtfr := c.Request.URL.Query().Get("dtfr")
   dtto := c.Request.URL.Query().Get("dtto")
   err1 := DB.Select(&repCsSale, `select date,
-            itm_id, item.description, quantity, stktran.rate from stktran
+            itm_id, item.description, quantity, stktran.rate, stktran.cost from stktran
             left join item on stktran.itm_id=item.id where type='S' and
             prt_id is null and lcn_id=? and date between ? and ?
             order by stktran.date desc`, id, dtfr, dtto)
   err2 := DB.Select(&repCrSale, `select date,
-            itm_id, item.description, quantity, stktran.rate from stktran
+            itm_id, item.description, quantity, stktran.rate, stktran.cost from stktran
             left join item on stktran.itm_id=item.id where type='S' and
             prt_id is not null and lcn_id=? and date between ? and ?
             order by stktran.date desc`, id, dtfr, dtto)
