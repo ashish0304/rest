@@ -190,7 +190,7 @@ func stktran(c *gin.Context) {
                quantity, rate, tax, value, cost, usr_id)
                VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`
   qPmttran := `insert into pmttran (txn_id, type, date, acc_id,
-               prt_id, amount) values(?,?,?,?,?,?)`
+               prt_id, amount, usr_id) values(?,?,?,?,?,?,?)`
 
   qStockUpd := `update stock set quantity=quantity+?, ` + mType[stktran.Type]
   qStockUpd += `=` + mType[stktran.Type] + `+? where lcn_id=? and itm_id=?`
@@ -313,11 +313,11 @@ func stktran(c *gin.Context) {
       _, err = stAccUpd.Exec(fTranValue + exp * -1, acc)
       if err != nil {goto error}
       if !dummyLcn {
-        _, err = stPmttran.Exec(tid, stktran.Type, stktran.Date, acc, nil, fTranValue)
+        _, err = stPmttran.Exec(tid, stktran.Type, stktran.Date, acc, nil, fTranValue, stktran.Usr_id)
         if err != nil {goto error}
       }
       if exp != 0 {
-        _, err = stPmttran.Exec(tid, "B", stktran.Date, acc, nil, exp * -1)
+        _, err = stPmttran.Exec(tid, "B", stktran.Date, acc, nil, exp * -1, stktran.Usr_id)
         if err != nil {goto error}
       }
     } else if !dummyLcn || (dummyLcn && stktran.Flg_total) {
@@ -329,13 +329,13 @@ func stktran(c *gin.Context) {
       _, err = stPrtUpd.Exec(fTranValue + stktran.Prt_exp, prt)
       if err != nil {goto error}
       if stktran.Expense != 0 {
-        _, err = stPmttran.Exec(tid, "B", stktran.Date, 1, nil, stktran.Expense * -1)
+        _, err = stPmttran.Exec(tid, "B", stktran.Date, 1, nil, stktran.Expense * -1, stktran.Usr_id)
         if err != nil {goto error}
         _, err = stAccUpd.Exec(stktran.Expense * -1, 1)
         if err != nil {goto error}
       }
       if stktran.Prt_exp != 0 {
-        _, err = stPmttran.Exec(tid, "B", stktran.Date, nil, prt, stktran.Prt_exp)
+        _, err = stPmttran.Exec(tid, "B", stktran.Date, nil, prt, stktran.Prt_exp, stktran.Usr_id)
         if err != nil {goto error}
       }
     }
