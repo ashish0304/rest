@@ -26,17 +26,6 @@ func items(c *gin.Context) {
   }
 }
 
-/*func itemsdesc(c *gin.Context) {
-  desc := "%"+c.Param("desc")+"%"
-  items := []Item{}
-  err := DB.Select(&items, "select * from item where description like ?", desc)
-  if err == nil{
-    c.JSON(200, items)
-  }else{
-    c.JSON(404, err)
-  }
-}*/
-
 func itemid(c *gin.Context) {
   id := c.Param("id")
   item := Item{}

@@ -47,6 +47,19 @@ type Acctrans struct{
   Comment NullString `db:"comment" json:"comment"`
 }
 
+type Ptran struct{
+  Rid int64 `db:"rowid" json:"rowid"`
+  Type string `db:"type" json:"type"`
+  Date int64 `db:"date" json:"date"`
+  Prt_id NullInt64 `db:"prt_id" json:"prt_id"`
+  Txn_id NullInt64 `db:"txn_id" json:"txn_id"`
+  Acc_id NullInt64 `db:"acc_id" json:"acc_id"`
+  Amount float32 `db:"amount" json:"amount"`
+  Comment NullString `db:"comment" json:"comment"`
+  Usr_id NullString `db:"usr_id" json:"usr_id"`
+  Flag NullString `db:"flag" json:"flag"`
+}
+
 func pmttran(c *gin.Context) {
   pmttran := Pmttran{}
   if err := c.BindJSON(&pmttran); err != nil {
@@ -189,4 +202,53 @@ func acctrans(c *gin.Context) {
          from pmttran left join party on prt_id=party.id where acc_id=?
          order by date desc limit ?,?`, acc, offset, limit)
   c.JSON(200, pmts)
+}
+
+func gptran(c *gin.Context) {
+  var length int
+  ptran := []Ptran{}
+  ln, _ := strconv.ParseBool(c.Request.URL.Query().Get("length"))
+  acc := c.Request.URL.Query().Get("acc")
+  typ := c.Request.URL.Query().Get("type")
+  off := c.Request.URL.Query().Get("offset")
+  lim := c.Request.URL.Query().Get("limit")
+
+  if ln {
+    rw := DB.QueryRow("select count() from pmttran " +
+         "where (acc_id=? or ?='') " +
+         "and (type=? or ?='') " +
+         "order by date desc", acc, acc, typ, typ)
+    rw.Scan(&length)
+  }
+  err := DB.Select(&ptran, "select rowid, * from pmttran " +
+         "where (acc_id=? or ?='') and (type=? or ?='') " +
+         "order by date desc limit ?,?", acc, acc, typ, typ, off, lim)
+  if err == nil {
+    //fmt.Println(ptran)
+    c.JSON(200, gin.H{ "len": length, "rows": ptran})
+  } else {
+    fmt.Println(err)
+  }    
+}
+
+func pptran(c *gin.Context) {
+  ptran := Ptran{}
+  if err := c.BindJSON(&ptran); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err})
+    fmt.Printf("%#v \n%#v", ptran, err)
+    return
+  }
+  _, err := DB.NamedExec("update pmttran set type=:type, date=:date, " +
+            "prt_id=case when :prt_id=0 then null else :prt_id end, " +
+            "txn_id=case when :txn_id=0 then null else :txn_id end, " +
+            "acc_id=case when :acc_id=0 then null else :acc_id end, " +
+            "usr_id=case when :usr_id='' then null else :usr_id end, " +
+            "amount=:amount, comment=:comment, flag=:flag " +
+            "where rowid=:rowid", &ptran)
+  if err!=nil{
+    fmt.Println(ptran, err)
+    c.JSON(400, err)
+  }else{
+    c.JSON(200, ptran)
+  }
 }

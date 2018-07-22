@@ -72,11 +72,15 @@ func main() {
 
   authWrite.POST("/stktran", stktran)
   authRead.GET("/repdateitm", repdateitm)
+  authWrite.PUT("/rawstran", pstran)
+  authRead.GET("/rawstran", gstran)
   authRead.GET("/replcnstat", replcnstat)
   
   authWrite.POST("/pmttran", pmttran)
   authRead.GET("/acctrans", acctrans)
   authRead.GET("/payments", payments)
+  authWrite.PUT("/rawptran", pptran)
+  authRead.GET("/rawptran", gptran)
 
   Router.POST("/api/login", login)
   Router.GET("/api/logout", logout)

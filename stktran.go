@@ -5,7 +5,7 @@ import (
   "strconv"
   "errors"
   "database/sql"
-  _"net/http"
+  "net/http"
   "github.com/gin-gonic/gin"
 )
 
@@ -73,6 +73,23 @@ type PartyItms struct{
   Rate float32 `db:"rate" json:"rate"`
 }
 
+type Stran struct{
+  Rid uint32 `json:"rowid" db:"rowid"`
+  Id uint32 `json:"id" db:"id"`
+  Type string `json:"type" db:"type"`
+  Date int64 `json:"date" db:"date"`
+  Lcn_id uint32 `json:"lcn_id" db:"lcn_id"`
+  Prt_id NullInt64 `json:"prt_id" db:"prt_id"`
+  Itm_id uint32 `json:"itm_id" db:"itm_id"`
+  Quantity int32 `json:"quantity" db:"quantity"`
+  Rate float32 `json:"rate" db:"rate"`
+  Value float32 `json:"value" db:"value"`
+  Tax NullFloat64 `json:"tax" db:"tax"`
+  Cost NullFloat64 `json:"cost" db:"cost"`
+  Usr_id NullString `json:"usr_id" db:"usr_id"`
+  Flag NullString `json:"flag" db:"flag"`
+}
+
 func stktran(c *gin.Context) {
   stktran := Stktran{}
   if err := c.BindJSON(&stktran); err != nil {
@@ -106,6 +123,19 @@ func stktran(c *gin.Context) {
     c.AbortWithError(406, errors.New("target location not specified"))
     return
   }
+
+  for i, _ := range stktran.Stocks {
+    if stktran.Type == "T" || stktran.Type == "A" {
+      stktran.Stocks[i].Rate = 0
+      stktran.Stocks[i].Tax = 0
+      stktran.Stocks[i].Cost = 0
+      stktran.Stocks[i].Value = 0
+    } else if stktran.Stocks[i].Rate <= 0 || stktran.Stocks[i].Cost <= 0 {
+      c.AbortWithError(406, errors.New("rate or cost not provided for the item"))
+      return
+    }
+  }
+
   if stktran.Type == "A" && stktran.Tgt_lcn_id > 0 {
     stktran.Tgt_lcn_id = 0
   }
@@ -450,5 +480,55 @@ func replcnstat(c *gin.Context) {
     c.JSON(200, repLocn)
   } else {
     fmt.Println(err)
+  }
+}
+
+func gstran(c *gin.Context) {
+  var length int
+  stran := []Stran{}
+  ln, _ := strconv.ParseBool(c.Request.URL.Query().Get("length"))
+  id := c.Request.URL.Query().Get("id")
+  lcn := c.Request.URL.Query().Get("lcn")
+  typ := c.Request.URL.Query().Get("type")
+  off := c.Request.URL.Query().Get("offset")
+  lim := c.Request.URL.Query().Get("limit")
+
+  if ln {
+    rw := DB.QueryRow("select count() from stktran " +
+         "where (id=? or ?='') " +
+         "and (type=? or ?='') " +
+         "and (lcn_id=? or ?='') order by date desc", id, id, typ, typ, lcn, lcn)
+    rw.Scan(&length)
+  }
+  err := DB.Select(&stran, "select rowid, * from stktran " +
+         "where (id=? or ?='') and (type=? or ?='') " +
+         "and (lcn_id=? or ?='') order by date desc limit ?,?", id, id, typ, typ, lcn, lcn, off, lim)
+  if err == nil {
+    //fmt.Println(stran)
+    c.JSON(200, gin.H{ "len": length, "rows": stran})
+  } else {
+    fmt.Println(err)
+  }    
+}
+
+func pstran(c *gin.Context) {
+  stran := Stran{}
+  if err := c.BindJSON(&stran); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err})
+    fmt.Printf("%#v \n%#v", stran, err)
+    return
+  }
+  _, err := DB.NamedExec("update stktran set id=:id, " +
+            "type=:type, date=:date, lcn_id=:lcn_id, " +
+            "prt_id=case when :prt_id=0 then null else :prt_id end, " +
+            "usr_id=case when :usr_id='' then null else :usr_id end, " +
+            "itm_id=:itm_id, quantity=:quantity, " +
+            "rate=:rate, value=:value, tax=:tax, " +
+            "cost=:cost, flag=:flag where rowid=:rowid", &stran)
+  if err!=nil{
+    fmt.Println(stran, err)
+    c.JSON(400, err)
+  }else{
+    c.JSON(200, stran)
   }
 }
