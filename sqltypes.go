@@ -1,39 +1,39 @@
 package main
 
 import (
-  "encoding/json"
-  "reflect"
-  "database/sql"
-  "database/sql/driver"
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"reflect"
 )
 
 func NullZero(z uint32) interface{} {
-  if z == 0 {
-    return nil
-  } else {
-    return z
-  }
+	if z == 0 {
+		return nil
+	} else {
+		return z
+	}
 }
 
 type NullInt64 sql.NullInt64
 
 func (ni *NullInt64) Scan(value interface{}) error {
- 	var i sql.NullInt64
- 	if err := i.Scan(value); err != nil {
-		  return err
-	 }
+	var i sql.NullInt64
+	if err := i.Scan(value); err != nil {
+		return err
+	}
 
- 	if reflect.TypeOf(value) == nil {
-	   *ni = NullInt64{i.Int64, false}
- 	} else {
-	  	*ni = NullInt64{i.Int64, true}
- 	}
- 	return nil
+	if reflect.TypeOf(value) == nil {
+		*ni = NullInt64{i.Int64, false}
+	} else {
+		*ni = NullInt64{i.Int64, true}
+	}
+	return nil
 }
 
 func (p NullInt64) Value() (driver.Value, error) {
-	if !p.Valid{
-		 return driver.Value(nil), nil
+	if !p.Valid {
+		return driver.Value(nil), nil
 	}
 	return driver.Value(p.Int64), nil
 }
@@ -60,7 +60,7 @@ func (nb *NullBool) Scan(value interface{}) error {
 }
 
 func (p NullBool) Value() (driver.Value, error) {
-	if !p.Valid{
+	if !p.Valid {
 		return driver.Value(nil), nil
 	}
 	return driver.Value(p.Bool), nil
@@ -87,11 +87,12 @@ func (nf *NullFloat64) Scan(value interface{}) error {
 }
 
 func (p NullFloat64) Value() (driver.Value, error) {
-	if !p.Valid{
+	if !p.Valid {
 		return driver.Value(nil), nil
 	}
 	return driver.Value(p.Float64), nil
 }
+
 // NullString is an alias for sql.NullString data type
 type NullString sql.NullString
 
@@ -113,7 +114,7 @@ func (ns *NullString) Scan(value interface{}) error {
 }
 
 func (p NullString) Value() (driver.Value, error) {
-	if !p.Valid{
+	if !p.Valid {
 		return driver.Value(nil), nil
 	}
 	return driver.Value(p.String), nil
