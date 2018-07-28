@@ -12,6 +12,7 @@ type Party struct{
   Address string `db:"address" json:"address"`
   Gstn NullString `db:"gstn" json:"gstn"`
   Balance float32 `db:"balance" json:"balance"`
+  Cheque NullFloat64 `db:"cheque" json:"cheque"`
 }
 
 type PartyAcc struct{

@@ -130,7 +130,7 @@ func stktran(c *gin.Context) {
       stktran.Stocks[i].Tax = 0
       stktran.Stocks[i].Cost = 0
       stktran.Stocks[i].Value = 0
-    } else if stktran.Stocks[i].Rate <= 0 || stktran.Stocks[i].Cost <= 0 {
+    } else if stktran.Stocks[i].Rate == 0 || stktran.Stocks[i].Cost == 0 {
       c.AbortWithError(406, errors.New("rate or cost not provided for the item"))
       return
     }
@@ -322,20 +322,20 @@ func stktran(c *gin.Context) {
       }
     } else if !dummyLcn || (dummyLcn && stktran.Flg_total) {
       if stktran.Type == "P" {
-        stktran.Prt_exp *= -1
+        _, err = stPrtUpd.Exec(fTranValue + stktran.Prt_exp * -1, prt)
       } else {
-        stktran.Prt_exp = 0
+        _, err = stPrtUpd.Exec(fTranValue + stktran.Expense, prt)
       }
-      _, err = stPrtUpd.Exec(fTranValue + stktran.Prt_exp, prt)
+      
       if err != nil {goto error}
       if stktran.Expense != 0 {
-        _, err = stPmttran.Exec(tid, "B", stktran.Date, 1, nil, stktran.Expense * -1, stktran.Usr_id)
+        _, err = stPmttran.Exec(tid, "B", stktran.Date, 1, prt, stktran.Expense * -1, stktran.Usr_id)
         if err != nil {goto error}
         _, err = stAccUpd.Exec(stktran.Expense * -1, 1)
         if err != nil {goto error}
       }
       if stktran.Prt_exp != 0 {
-        _, err = stPmttran.Exec(tid, "B", stktran.Date, nil, prt, stktran.Prt_exp, stktran.Usr_id)
+        _, err = stPmttran.Exec(tid, "B", stktran.Date, nil, prt, stktran.Prt_exp * -1, stktran.Usr_id)
         if err != nil {goto error}
       }
     }
@@ -352,7 +352,7 @@ func stktran(c *gin.Context) {
   stLcnUpd.Close(); stAccUpd.Close()
   return
 error:
-  //fmt.Printf("%#v\n", err)
+  fmt.Printf("%#v\n", err)
   c.AbortWithError(406, err)
 }
 
