@@ -47,7 +47,7 @@ type Stkrep struct {
 	Description string  `json:"description" db:"description"`
 	Quantity    int32   `json:"quantity" db:"quantity"`
 	Rate        float32 `json:"rate" db:"rate"`
-	Cost        float32 `json:"cost" db:"cost"`
+	Cost        NullFloat64 `json:"cost" db:"cost"`
 }
 
 type Amtrep struct {
@@ -554,10 +554,8 @@ func replcnstat(c *gin.Context) {
 	err := DB.Select(&repLocn, `
          select (type || ':' || round((tax/(value/100)),1)) as type,
          round(sum(value), 2) as amount, round(sum(tax), 2) as tax from stktran
-         where lcn_id=? and strftime('%Y-%m', date, 'unixepoch')=?
-         group by type, round((tax/(value/100)),1)
-         order by type
-         `, locn, mnth)
+         where lcn_id=? and strftime('%Y-%m', date, 'unixepoch')=? and value != 0
+         group by type, round((tax/(value/100)),1) order by type`, locn, mnth)
 	if err == nil {
 		c.JSON(200, repLocn)
 	} else {

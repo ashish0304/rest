@@ -49,6 +49,7 @@ func main() {
 	authRead.GET("/party/:id/items", prtitems)
 	authRead.GET("/partyacc/:desc", partyacc)
 	authRead.GET("/partiesbal", partiesbal)
+ authRead.GET("/cheques", cheques)
 
 	authRead.GET("/account", account)
 	authRead.GET("/account/:id", accountid)
