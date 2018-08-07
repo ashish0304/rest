@@ -42,11 +42,11 @@ type ItemTran struct {
 }
 
 type Stkrep struct {
-	Date        int64   `json:"date" db:"date"`
-	Itm_id      uint32  `json:"itm_id" db:"itm_id"`
-	Description string  `json:"description" db:"description"`
-	Quantity    int32   `json:"quantity" db:"quantity"`
-	Rate        float32 `json:"rate" db:"rate"`
+	Date        int64       `json:"date" db:"date"`
+	Itm_id      uint32      `json:"itm_id" db:"itm_id"`
+	Description string      `json:"description" db:"description"`
+	Quantity    int32       `json:"quantity" db:"quantity"`
+	Rate        float32     `json:"rate" db:"rate"`
 	Cost        NullFloat64 `json:"cost" db:"cost"`
 }
 

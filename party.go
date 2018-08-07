@@ -4,23 +4,27 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type Party struct {
-	Id          int         `db:"id" json:"id"`
-	Description string      `db:"description" json:"description"`
-	Address     string      `db:"address" json:"address"`
-	Gstn        NullString  `db:"gstn" json:"gstn"`
-	Balance     float32     `db:"balance" json:"balance"`
-	Chq_amt     NullFloat64 `db:"chq_amt" json:"chq_amt"`
+	Id          int        `db:"id" json:"id"`
+	Description string     `db:"description" json:"description"`
+	Address     string     `db:"address" json:"address"`
+	Gstn        NullString `db:"gstn" json:"gstn"`
+	Balance     float32    `db:"balance" json:"balance"`
+	Chq_amt     float32    `db:"chq_amt" json:"chq_amt"`
 }
 
 type Cheques struct {
- Prt_id int `db:"prt_id" json:"prt_id"`
- Party string `db:"party" json:"party"`
- Description NullString `db:"description" json:"description"`
- Date int `db:"date" json:"date"`
- Amount float32 `db:"amount" json:"amount"`
+	Rid         uint       `db:"rowid" json:"rowid"`
+	Acc_id      uint       `db:"acc_id" json:"acc_id"`
+	Account     string     `db:"account" json:"account"`
+	Prt_id      uint       `db:"prt_id" json:"prt_id"`
+	Party       string     `db:"party" json:"party"`
+	Description NullString `db:"description" json:"description"`
+	Date        int        `db:"date" json:"date"`
+	Amount      float32    `db:"amount" json:"amount"`
 }
 
 type PartyAcc struct {
@@ -118,7 +122,7 @@ func partiesbal(c *gin.Context) {
 	partyR := []Party{}
 	partyP := []Party{}
 	errR := DB.Select(&partyR, "select id, description, balance, chq_amt from party where balance > 0 order by description")
-	errP := DB.Select(&partyP, "select id, description, balance*-1, chq_amt*-1 from party where balance < 0 order by description")
+	errP := DB.Select(&partyP, "select id, description, balance*-1 as balance, chq_amt*-1 as chq_amt from party where balance < 0 order by description")
 	if errR == nil && errP == nil {
 		c.JSON(200, gin.H{"R": partyR, "P": partyP})
 	}
@@ -128,16 +132,111 @@ func cheques(c *gin.Context) {
 	chequeR := []Cheques{}
 	chequeP := []Cheques{}
 	errR := DB.Select(&chequeR, `
-  select prt_id, party.description as party,
+  select cheque.rowid, prt_id, party.description as party,
+  acc_id, account.description as account,
   cheque.description, date, amount from cheque
   left join party on cheque.prt_id=party.id
-  where amount > 0 order by date`)
+  left join account on cheque.acc_id=account.id
+  where cheque.amount > 0 and flag is null order by date`)
 	errP := DB.Select(&chequeP, `
-  select prt_id, party.description as party,
+  select cheque.rowid, prt_id, party.description as party,
+  acc_id, account.description as account,
   cheque.description, date, amount from cheque
   left join party on cheque.prt_id=party.id
-  where amount < 0 order by date`)
+  left join account on cheque.acc_id=account.id
+  where cheque.amount < 0 and flag is null order by date`)
 	if errR == nil && errP == nil {
 		c.JSON(200, gin.H{"R": chequeR, "P": chequeP})
+	} else {
+		fmt.Print(errR, errP)
+		c.JSON(400, errR)
 	}
+}
+
+func chequehonor(c *gin.Context) {
+	cheque := Cheques{}
+	if err := c.BindJSON(&cheque); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		fmt.Printf("%#v\n%#v", cheque, err)
+		return
+	}
+	dt, _ := strconv.Atoi(c.Request.URL.Query().Get("date"))
+	var tType string
+	usr_id := c.MustGet("usr_id").(string)
+
+	tx, err := DB.Begin()
+	if err != nil {
+		goto error
+	}
+	defer tx.Rollback()
+
+	if cheque.Amount > 0 {
+		tType = "S"
+	} else if cheque.Amount < 0 {
+		tType = "T"
+	}
+	_, err = tx.Exec(`insert into pmttran(type, date, prt_id, acc_id,
+  amount, comment, usr_id) values(?,?,?,?,?,?,?)`, tType, dt,
+		cheque.Prt_id, cheque.Acc_id, cheque.Amount, cheque.Description, usr_id)
+	if err != nil {
+		goto error
+	}
+	_, err = tx.Exec(`update party set balance=balance + ?, chq_amt=chq_amt
+ + ? where id=?`, cheque.Amount*-1, cheque.Amount*-1, cheque.Prt_id)
+	if err != nil {
+		goto error
+	}
+	_, err = tx.Exec(`update cheque set flag='c' where rowid=?`, cheque.Rid)
+	if err != nil {
+		goto error
+	}
+	_, err = tx.Exec(`update account set balance=balance + ? where id=?`,
+		cheque.Amount, cheque.Acc_id)
+	if err != nil {
+		goto error
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+	}
+	return
+error:
+	fmt.Println(err)
+	c.JSON(500, gin.H{"error": err})
+}
+
+func chequecancel(c *gin.Context) {
+	cheque := Cheques{}
+	if err := c.BindJSON(&cheque); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		fmt.Printf("%#v\n%#v", cheque, err)
+		return
+	}
+
+	tx, err := DB.Begin()
+	if err != nil {
+		goto error
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(`update party set chq_amt=chq_amt
+ + ? where id=?`, cheque.Amount*-1, cheque.Prt_id)
+	if err != nil {
+		goto error
+	}
+	_, err = tx.Exec(`update cheque set flag='d!' where rowid=?`, cheque.Rid)
+	if err != nil {
+		goto error
+	}
+	err = tx.Commit()
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+	}
+	return
+error:
+	fmt.Println(err)
+	c.JSON(500, gin.H{"error": err})
 }
