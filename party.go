@@ -173,7 +173,7 @@ func chequehonor(c *gin.Context) {
 	if cheque.Amount > 0 {
 		tType = "S"
 	} else if cheque.Amount < 0 {
-		tType = "T"
+		tType = "P"
 	}
 	_, err = tx.Exec(`insert into pmttran(type, date, prt_id, acc_id,
   amount, comment, usr_id) values(?,?,?,?,?,?,?)`, tType, dt,
