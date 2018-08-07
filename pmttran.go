@@ -95,7 +95,7 @@ func pmttran(c *gin.Context) {
 
 	//get usr id from context
 	pmttran.Usr_id = c.MustGet("usr_id").(string)
-
+ fmt.Println(pmttran)
 	tx, err := DB.Begin()
 	if err != nil {
 		goto error
@@ -123,7 +123,7 @@ func pmttran(c *gin.Context) {
 		goto error
 	}
 
-	if !pmttran.Chq_date.Valid {
+	if pmttran.Chq_date.Int64 == 0 {
 		switch pmttran.Type {
 		case "S", "T", "H": //Sale, Transfer/Deposit, Petty Loan Taken
 			_, err = stPmttran.Exec(pmttran.Type, pmttran.Date,
@@ -165,7 +165,7 @@ func pmttran(c *gin.Context) {
 
 	switch pmttran.Type {
 	case "S", "H": //Sale, Petty Loan Taken
-		if pmttran.Chq_date.Valid {
+		if pmttran.Chq_date.Int64 != 0 {
 			_, err = stChqUpd.Exec(pmttran.Amount, pmttran.Prt_id)
 			if err != nil {
 				goto error
@@ -181,7 +181,7 @@ func pmttran(c *gin.Context) {
 			}
 		}
 	case "P", "B", "G": //Purchase, Bus/Transport, Petty Loan Given
-		if pmttran.Chq_date.Valid {
+		if pmttran.Chq_date.Int64 != 0 {
 			_, err = stChqUpd.Exec(pmttran.Amount*-1, pmttran.Prt_id)
 			if err != nil {
 				goto error
