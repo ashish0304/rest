@@ -36,9 +36,9 @@ func parties(c *gin.Context) {
 	parties := []Party{}
 	err := DB.Select(&parties, "select * from party")
 	if err == nil {
-		c.JSON(200, parties)
+		c.JSON(http.StatusOK, parties)
 	} else {
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -52,9 +52,9 @@ func partyacc(c *gin.Context) {
                               from party where description
                               like ?`, desc, desc)
 	if err == nil {
-		c.JSON(200, parties)
+		c.JSON(http.StatusOK, parties)
 	} else {
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -63,9 +63,9 @@ func partiesdesc(c *gin.Context) {
 	parties := []Party{}
 	err := DB.Select(&parties, "select * from party where description like ?", desc)
 	if err == nil {
-		c.JSON(200, parties)
+		c.JSON(http.StatusOK, parties)
 	} else {
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -74,47 +74,47 @@ func partyid(c *gin.Context) {
 	party := Party{}
 	err := DB.Get(&party, "select * from party where id=?", id)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, party)
+		c.JSON(http.StatusOK, party)
 	}
 }
 
 func partyadd(c *gin.Context) {
 	party := Party{}
 	if err := c.BindJSON(&party); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", party, err)
 		return
 	}
 	if len(party.Description) < 5 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Description length is less than 5!"})
+		c.JSON(http.StatusBadRequest, "Error: Description length is less than 5!")
 		return
 	}
 	_, err := DB.NamedExec("insert into party(description, address, gstn, balance, chq_amt) values(:description, :address, :gstn, :balance, :chq_amt)", &party)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, party)
+		c.JSON(http.StatusOK, party)
 	}
 }
 
 func partyupdate(c *gin.Context) {
 	party := Party{}
 	if err := c.BindJSON(&party); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", party, err)
 		return
 	}
 	if len(party.Description) < 5 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Description length is less than 5!"})
+		c.JSON(http.StatusBadRequest, "Error: Description length is less than 5!")
 		return
 	}
 	_, err := DB.NamedExec("update party set description=:description, address=:address, gstn=:gstn, balance=:balance, chq_amt=:chq_amt where id=:id", &party)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, party)
+		c.JSON(http.StatusOK, party)
 	}
 }
 
@@ -124,7 +124,7 @@ func partiesbal(c *gin.Context) {
 	errR := DB.Select(&partyR, "select id, description, balance, chq_amt from party where balance > 0 order by description")
 	errP := DB.Select(&partyP, "select id, description, balance*-1 as balance, chq_amt*-1 as chq_amt from party where balance < 0 order by description")
 	if errR == nil && errP == nil {
-		c.JSON(200, gin.H{"R": partyR, "P": partyP})
+		c.JSON(http.StatusOK, gin.H{"R": partyR, "P": partyP})
 	}
 }
 
@@ -146,17 +146,17 @@ func cheques(c *gin.Context) {
   left join account on cheque.acc_id=account.id
   where cheque.amount < 0 and flag is null order by date`)
 	if errR == nil && errP == nil {
-		c.JSON(200, gin.H{"R": chequeR, "P": chequeP})
+		c.JSON(http.StatusOK, gin.H{"R": chequeR, "P": chequeP})
 	} else {
 		fmt.Print(errR, errP)
-		c.JSON(400, errR)
+		c.JSON(http.StatusBadRequest, errR)
 	}
 }
 
 func chequehonor(c *gin.Context) {
 	cheque := Cheques{}
 	if err := c.BindJSON(&cheque); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v\n%#v", cheque, err)
 		return
 	}
@@ -204,13 +204,13 @@ func chequehonor(c *gin.Context) {
 	return
 error:
 	fmt.Println(err)
-	c.JSON(500, gin.H{"error": err})
+	c.JSON(http.StatusInternalServerError, err)
 }
 
 func chequecancel(c *gin.Context) {
 	cheque := Cheques{}
 	if err := c.BindJSON(&cheque); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v\n%#v", cheque, err)
 		return
 	}
@@ -238,5 +238,5 @@ func chequecancel(c *gin.Context) {
 	return
 error:
 	fmt.Println(err)
-	c.JSON(500, gin.H{"error": err})
+	c.JSON(http.StatusInternalServerError, err)
 }

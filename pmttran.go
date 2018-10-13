@@ -64,17 +64,17 @@ type Ptran struct {
 func pmttran(c *gin.Context) {
 	pmttran := Pmttran{}
 	if err := c.BindJSON(&pmttran); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", pmttran, err)
 		return
 	}
 	if pmttran.Amount <= 0 || pmttran.Acc_id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Amount/Account must not be 0 or less!"})
+		c.JSON(http.StatusBadRequest, "Error: Amount/Account must not be 0 or less!")
 		return
 	}
 	if (pmttran.Type == "S" || pmttran.Type == "P" ||
 		pmttran.Type == "G" || pmttran.Type == "H") && pmttran.Prt_id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Party is required for submitted transaction!"})
+		c.JSON(http.StatusBadRequest, "Error: Party is required for submitted transaction!")
 		return
 	}
 	if pmttran.Type != "T" {
@@ -95,7 +95,7 @@ func pmttran(c *gin.Context) {
 
 	//get usr id from context
 	pmttran.Usr_id = c.MustGet("usr_id").(string)
- fmt.Println(pmttran)
+ //fmt.Println(pmttran)
 	tx, err := DB.Begin()
 	if err != nil {
 		goto error
@@ -211,7 +211,7 @@ func pmttran(c *gin.Context) {
 	return
 error:
 	fmt.Println(err)
-	c.JSON(500, gin.H{"error": err})
+	c.JSON(http.StatusInternalServerError, err)
 }
 
 func payments(c *gin.Context) {
@@ -229,10 +229,10 @@ func payments(c *gin.Context) {
          from pmttran left join account on acc_id=account.id
          left join party on prt_id=party.id order by date desc limit ?,?`, offset, limit)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Println(err)
 	} else {
-		c.JSON(200, pmts)
+		c.JSON(http.StatusOK, pmts)
 	}
 }
 
@@ -252,10 +252,10 @@ func prtpayments(c *gin.Context) {
          from pmttran left join account on acc_id=account.id
          where prt_id=? order by date desc limit ?,?`, id, offset, limit)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 		//fmt.Println(err)
 	} else {
-		c.JSON(200, pmts)
+		c.JSON(http.StatusOK, pmts)
 	}
 }
 
@@ -277,7 +277,7 @@ func acctrans(c *gin.Context) {
          prt_id, party.description as party, amount, comment
          from pmttran left join party on prt_id=party.id where acc_id=?
          order by date desc limit ?,?`, acc, offset, limit)
-	c.JSON(200, pmts)
+	c.JSON(http.StatusOK, pmts)
 }
 
 func gptran(c *gin.Context) {
@@ -301,7 +301,7 @@ func gptran(c *gin.Context) {
 		"order by date desc limit ?,?", acc, acc, typ, typ, off, lim)
 	if err == nil {
 		//fmt.Println(ptran)
-		c.JSON(200, gin.H{"len": length, "rows": ptran})
+		c.JSON(http.StatusOK, gin.H{"len": length, "rows": ptran})
 	} else {
 		fmt.Println(err)
 	}
@@ -310,7 +310,7 @@ func gptran(c *gin.Context) {
 func pptran(c *gin.Context) {
 	ptran := Ptran{}
 	if err := c.BindJSON(&ptran); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", ptran, err)
 		return
 	}
@@ -323,8 +323,8 @@ func pptran(c *gin.Context) {
 		"where rowid=:rowid", &ptran)
 	if err != nil {
 		fmt.Println(ptran, err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, ptran)
+		c.JSON(http.StatusOK, ptran)
 	}
 }

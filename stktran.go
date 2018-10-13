@@ -2,10 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"github.com/gin-gonic/gin"
 	"strconv"
 )
 
@@ -93,11 +92,11 @@ type Stran struct {
 func stktran(c *gin.Context) {
 	stktran := Stktran{}
 	if err := c.BindJSON(&stktran); err != nil {
-		c.AbortWithError(406, err)
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	if stktran.Expense < 0 || stktran.Prt_exp < 0 {
-		c.AbortWithError(406, errors.New("Expense, party expense must not be less than zero"))
+		c.JSON(http.StatusBadRequest, "Error: Expense, party expense must not be less than zero")
 		return
 	}
 	var mType = map[string]string{
@@ -106,7 +105,7 @@ func stktran(c *gin.Context) {
 		"T": "qty_tsfr",
 		"A": "qty_adjt"}
 	if _, ok := mType[stktran.Type]; !ok {
-		c.AbortWithError(406, errors.New("Unknown transaction types"))
+		c.JSON(http.StatusBadRequest, "Error: Unknown transaction types")
 		return
 	}
 	//check for dummy locations
@@ -116,11 +115,11 @@ func stktran(c *gin.Context) {
 
 	//check for dummy locations and transfer
 	if (dummyLcn || dummyTgt) && stktran.Type == "T" {
-		c.AbortWithError(406, errors.New("transfer is not allowed to/from dummy location"))
+		c.JSON(http.StatusBadRequest, "Error: Transfer is not allowed to/from dummy location")
 		return
 	}
 	if stktran.Tgt_lcn_id < 1 && (stktran.Type == "T" || stktran.Flg_merge == true) {
-		c.AbortWithError(406, errors.New("target location not specified"))
+		c.JSON(http.StatusBadRequest, "Error: Target location not specified")
 		return
 	}
 
@@ -131,7 +130,7 @@ func stktran(c *gin.Context) {
 			stktran.Stocks[i].Cost = 0
 			stktran.Stocks[i].Value = 0
 		} else if stktran.Stocks[i].Rate == 0 || stktran.Stocks[i].Cost == 0 {
-			c.AbortWithError(406, errors.New("rate or cost not provided for the item"))
+			c.JSON(http.StatusBadRequest, "Error: Rate or cost not provided for the item")
 			return
 		}
 	}
@@ -148,7 +147,7 @@ func stktran(c *gin.Context) {
 
 	//get usr id from context
 	stktran.Usr_id = c.MustGet("usr_id").(string)
-	fmt.Println(stktran.Usr_id)
+	//fmt.Println(stktran.Usr_id)
 	var acc, prt uint32
 	if stktran.PrtAcc_id < 0 {
 		acc = uint32(stktran.PrtAcc_id * -1)
@@ -362,7 +361,6 @@ func stktran(c *gin.Context) {
 	}
 
 	//update party balance
-
 	if fTranValue != 0 {
 		exp := stktran.Expense + stktran.Prt_exp
 		if acc > 0 {
@@ -414,7 +412,7 @@ func stktran(c *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 		tx.Rollback()
-		c.AbortWithError(500, err)
+		c.JSON(http.StatusInternalServerError, err)
 	}
 	stStktran.Close()
 	stPmttran.Close()
@@ -427,7 +425,7 @@ func stktran(c *gin.Context) {
 	return
 error:
 	fmt.Printf("%#v\n", err)
-	c.AbortWithError(406, err)
+	c.JSON(http.StatusBadRequest, err)
 }
 
 func getLastID(l uint32, t string) uint32 {
@@ -487,7 +485,7 @@ func repdateitm(c *gin.Context) {
             pmttran.prt_id=party.id where type in("S", "T", "H") and
             date between ? and ? order by pmttran.date desc`, dtfr, dtto)
 	if err1 == nil && err2 == nil && err3 == nil && err4 == nil && err5 == nil && err6 == nil && err7 == nil && err8 == nil {
-		c.JSON(200, gin.H{"cssale": repCsSale,
+		c.JSON(http.StatusOK, gin.H{"cssale": repCsSale,
 			"crsale": repCrSale,
 			"cspurc": repCsPurc,
 			"crpurc": repCrPurc,
@@ -516,10 +514,10 @@ func itemtran(c *gin.Context) {
          quantity, rate from stktran where itm_id=?
          order by date desc limit ?,?`, id, offset, limit)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 		//fmt.Println(err)
 	} else {
-		c.JSON(200, trns)
+		c.JSON(http.StatusOK, trns)
 	}
 }
 
@@ -540,10 +538,10 @@ func prtitems(c *gin.Context) {
          left join location on lcn_id=location.id where dummy=0 and prt_id=?
          order by date desc limit ?,?`, id, offset, limit)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 		//fmt.Println(err)
 	} else {
-		c.JSON(200, itms)
+		c.JSON(http.StatusOK, itms)
 	}
 }
 
@@ -557,7 +555,7 @@ func replcnstat(c *gin.Context) {
          where lcn_id=? and strftime('%Y-%m', date, 'unixepoch')=? and value != 0
          group by type, round((tax/(value/100)),1) order by type`, locn, mnth)
 	if err == nil {
-		c.JSON(200, repLocn)
+		c.JSON(http.StatusOK, repLocn)
 	} else {
 		fmt.Println(err)
 	}
@@ -585,7 +583,7 @@ func gstran(c *gin.Context) {
 		"and (lcn_id=? or ?='') order by date desc limit ?,?", id, id, typ, typ, lcn, lcn, off, lim)
 	if err == nil {
 		//fmt.Println(stran)
-		c.JSON(200, gin.H{"len": length, "rows": stran})
+		c.JSON(http.StatusOK, gin.H{"len": length, "rows": stran})
 	} else {
 		fmt.Println(err)
 	}
@@ -594,7 +592,7 @@ func gstran(c *gin.Context) {
 func pstran(c *gin.Context) {
 	stran := Stran{}
 	if err := c.BindJSON(&stran); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", stran, err)
 		return
 	}
@@ -607,8 +605,8 @@ func pstran(c *gin.Context) {
 		"cost=:cost, flag=:flag where rowid=:rowid", &stran)
 	if err != nil {
 		fmt.Println(stran, err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, stran)
+		c.JSON(http.StatusOK, stran)
 	}
 }

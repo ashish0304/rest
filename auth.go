@@ -1,10 +1,7 @@
 package main
 
 import (
-	_ "fmt"
-	_ "math"
 	"net/http"
-	_ "os"
 	"strconv"
 	"time"
 
@@ -18,13 +15,13 @@ func AuthRead(c *gin.Context) {
 	//fmt.Println(c.Request.Header["Referer"])
 	ck, err := c.Request.Cookie("token")
 	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	//fmt.Println(ck)
 	_, err1 := parseToken(ck.Value)
 	if err1 != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	//fmt.Println(cl)
@@ -34,13 +31,13 @@ func AuthRead(c *gin.Context) {
 func AuthWrite(c *gin.Context) {
 	ck, err := c.Request.Cookie("token")
 	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	//fmt.Println(ck)
 	cl, err1 := parseToken(ck.Value)
 	if err1 != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	//fmt.Println(cl.(jwt.MapClaims))
@@ -81,7 +78,7 @@ func login(c *gin.Context) {
 	usr := User{}
 	err := DB.Get(&usr, "select * from user where id=? and password=?", userid, password)
 	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	//fmt.Printf("%#v", usr)

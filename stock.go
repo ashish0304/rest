@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"github.com/gin-gonic/gin"
 	"strconv"
 )
@@ -38,9 +39,9 @@ func stock(c *gin.Context) {
 	it := c.Param("it")
 	err := DB.Select(&stock, "select * from stock where lcn_id=? and itm_id=?", lc, it)
 	if err == nil {
-		c.JSON(200, stock)
+		c.JSON(http.StatusOK, stock)
 	} else {
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -60,10 +61,10 @@ func stocks(c *gin.Context) {
              where lcn_id=? and type='P' group by itm_id) as 'a' on stock.itm_id=a.itm_id
            where stock.quantity != 0 and lcn_id=?`+sTax, lc, lc)
 	if err == nil {
-		c.JSON(200, stock)
+		c.JSON(http.StatusOK, stock)
 	} else {
 		fmt.Println(err)
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -83,10 +84,10 @@ func invs(c *gin.Context) {
 	outs := []Inventory{}
 	err := DB.Select(&outs, strQ)
 	if err == nil {
-		c.JSON(200, outs)
+		c.JSON(http.StatusOK, outs)
 	} else {
 		fmt.Println(err, strQ)
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -95,7 +96,7 @@ func invsadd(c *gin.Context) {
 	outs := []Inventory{}
 	if err := c.BindJSON(&invs); err != nil {
 		fmt.Println(err)
-		c.AbortWithError(406, err)
+		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	res, err := DB.NamedExec("update inventory set quantity="+
@@ -103,7 +104,7 @@ func invsadd(c *gin.Context) {
 		"lcn_id=:lcn_id and itm_id=:itm_id", &invs)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	upd, _ := res.RowsAffected()
@@ -112,7 +113,7 @@ func invsadd(c *gin.Context) {
             description, quantity from inventory
             left join item on inventory.itm_id=item.id
             where inventory.id=? and lcn_id=?`, invs.Id.String, invs.Lcn_id.Int64)
-		c.JSON(200, outs)
+		c.JSON(http.StatusOK, outs)
 		return
 	}
 	_, err = DB.NamedExec("insert or ignore into inventory"+
@@ -120,21 +121,21 @@ func invsadd(c *gin.Context) {
 		" values(:id, :lcn_id, :itm_id, :quantity)", &invs)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
 func invsdel(c *gin.Context) {
 	invs := Inventory{}
 	if err := c.BindJSON(&invs); err != nil {
-		c.AbortWithError(406, err)
+		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	_, err := DB.NamedExec("delete from inventory where id=:id and "+
 		"lcn_id=:lcn_id and itm_id=:itm_id", &invs)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -143,7 +144,7 @@ func clrstk(c *gin.Context) {
 	_, err := DB.Exec("delete from stock where lcn_id=?", lcn_id)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -158,14 +159,14 @@ func expinv(c *gin.Context) {
 	tx, err := DB.Begin()
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 	defer tx.Rollback()
 
 	stStk, err := tx.Prepare("insert into stock(lcn_id, itm_id, quantity) values(?, ?, ?)")
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 
 	for _, s := range invs {
@@ -173,7 +174,7 @@ func expinv(c *gin.Context) {
 
 		if err != nil {
 			fmt.Println(lcn_id, s.Itm_id, err)
-			c.JSON(400, err)
+			c.JSON(http.StatusBadRequest, err)
 			return
 		}
 	}
@@ -181,7 +182,7 @@ func expinv(c *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 		tx.Rollback()
-		c.AbortWithError(500, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 	}
 	stStk.Close()
 }
@@ -192,6 +193,6 @@ func clrinv(c *gin.Context) {
 	_, err := DB.Exec("delete from inventory where id=? and lcn_id=?", inv_id, lcn_id)
 	if err != nil {
 		fmt.Println(err)
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }

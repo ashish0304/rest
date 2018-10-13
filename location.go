@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "fmt"
+	"net/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,9 +21,9 @@ func location(c *gin.Context) {
 	err := DB.Select(&locations, "select * from location")
 	//fmt.Printf("%#v", locations)
 	if err == nil {
-		c.JSON(200, locations)
+		c.JSON(http.StatusOK, locations)
 	} else {
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -32,9 +32,9 @@ func locationid(c *gin.Context) {
 	location := Location{}
 	err := DB.Get(&location, "select * from location where id=?", id)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, location)
+		c.JSON(http.StatusOK, location)
 	}
 }
 
@@ -43,9 +43,9 @@ func locationadd(c *gin.Context) {
 	c.BindJSON(&location)
 	_, err := DB.NamedExec("insert into location(description, address, dummy) values(:description, :address, :dummy)", &location)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, location)
+		c.JSON(http.StatusOK, location)
 	}
 }
 
@@ -54,8 +54,8 @@ func locationupdate(c *gin.Context) {
 	c.BindJSON(&location)
 	_, err := DB.NamedExec("update location set description=:description, address=:address, dummy=:dummy where id=:id", &location)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, location)
+		c.JSON(http.StatusOK, location)
 	}
 }

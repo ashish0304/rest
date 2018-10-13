@@ -20,9 +20,9 @@ func items(c *gin.Context) {
 	items := []Item{}
 	err := DB.Select(&items, "select * from item where description like ?", desc)
 	if err == nil {
-		c.JSON(200, items)
+		c.JSON(http.StatusOK, items)
 	} else {
-		c.JSON(404, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
@@ -31,46 +31,46 @@ func itemid(c *gin.Context) {
 	item := Item{}
 	err := DB.Get(&item, "select * from item where id=?", id)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, item)
+		c.JSON(http.StatusOK, item)
 	}
 }
 
 func itemadd(c *gin.Context) {
 	item := Item{}
 	if err := c.BindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", item, err)
 		return
 	}
 	if len(item.Description) < 5 || item.Cost < 0 || item.Price < 0 || item.Tax < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid values!"})
+		c.JSON(http.StatusBadRequest, "Error: Invalid values!")
 		return
 	}
 	_, err := DB.NamedExec("insert into item(description, hsn, cost, price, tax) values(:description, :hsn, :cost, :price, :tax)", &item)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, item)
+		c.JSON(http.StatusOK, item)
 	}
 }
 
 func itemupdate(c *gin.Context) {
 	item := Item{}
 	if err := c.BindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, err)
 		fmt.Printf("%#v \n%#v", item, err)
 		return
 	}
 	if len(item.Description) < 5 || item.Cost < 0 || item.Price < 0 || item.Tax < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid values!"})
+		c.JSON(http.StatusBadRequest, "Error: Invalid values!")
 		return
 	}
 	_, err := DB.NamedExec("update item set description=:description, hsn=:hsn, cost=:cost, price=:price, tax=:tax where id=:id", &item)
 	if err != nil {
-		c.JSON(400, err)
+		c.JSON(http.StatusBadRequest, err)
 	} else {
-		c.JSON(200, item)
+		c.JSON(http.StatusOK, item)
 	}
 }
