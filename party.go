@@ -28,8 +28,9 @@ type Cheques struct {
 }
 
 type PartyAcc struct {
-	Id          int    `db:"id" json:"id"`
-	Description string `db:"description" json:"description"`
+	Id          int        `db:"id" json:"id"`
+	Description string     `db:"description" json:"description"`
+ Balance     float32    `db:"balance" json:"balance"`
 }
 
 func parties(c *gin.Context) {
@@ -45,10 +46,10 @@ func parties(c *gin.Context) {
 func partyacc(c *gin.Context) {
 	desc := "%" + c.Param("desc") + "%"
 	parties := []PartyAcc{}
-	err := DB.Select(&parties, `select id*-1 as id, description
+	err := DB.Select(&parties, `select id*-1 as id, description, balance
                               from account where description
                               like ? union all
-                              select id, description
+                              select id, description, balance
                               from party where description
                               like ?`, desc, desc)
 	if err == nil {

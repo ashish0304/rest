@@ -1,6 +1,7 @@
 package main
 
 import (
+ _"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -9,26 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthRead(c *gin.Context) {
-	//c.Next()
-	//return
-	//fmt.Println(c.Request.Header["Referer"])
-	ck, err := c.Request.Cookie("token")
-	if err != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	//fmt.Println(ck)
-	_, err1 := parseToken(ck.Value)
-	if err1 != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	//fmt.Println(cl)
-	c.Next()
-}
-
-func AuthWrite(c *gin.Context) {
+func AuthSales(c *gin.Context) {
 	ck, err := c.Request.Cookie("token")
 	if err != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
@@ -40,7 +22,34 @@ func AuthWrite(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	//fmt.Println(cl.(jwt.MapClaims))
+ //fmt.Println(cl.(jwt.MapClaims))
+ if (uint32(cl.(jwt.MapClaims)["acc"].(float64)) & UserSales) != UserSales {
+  c.AbortWithStatus(http.StatusForbidden)
+  return
+ }
+
+	c.Set("usr_id", cl.(jwt.MapClaims)["usr"])
+	c.Next()
+}
+
+func AuthAdmin(c *gin.Context) {
+	ck, err := c.Request.Cookie("token")
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	//fmt.Println(ck)
+	cl, err1 := parseToken(ck.Value)
+	if err1 != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+ //fmt.Println(cl.(jwt.MapClaims))
+ if (uint32(cl.(jwt.MapClaims)["acc"].(float64)) & UserAdmin) != UserAdmin {
+  c.AbortWithStatus(http.StatusForbidden)
+  return
+ }
+
 	c.Set("usr_id", cl.(jwt.MapClaims)["usr"])
 	c.Next()
 }
