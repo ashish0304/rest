@@ -54,6 +54,8 @@ type Amtrep struct {
 	Date    int64      `json:"date" db:"date"`
 	Prt_id  NullInt64  `json:"prt_id" db:"prt_id"`
 	Party   NullString `json:"party" db:"party"`
+	Acc_id  NullInt64  `json:"acc_id" db:"acc_id"`
+	Account NullString `json:"account" db:"account"`
 	Comment NullString `json:"comment" db:"comment"`
 	Amount  float32    `json:"amount" db:"amount"`
 }
@@ -477,12 +479,20 @@ func repdateitm(c *gin.Context) {
             lcn_id=? and date between ? and ?
             order by stktran.date desc`, id, dtfr, dtto)
 	err7 := DB.Select(&repAmPaid, `select type, date, prt_id,
-            party.description as party, comment, amount from pmttran left join party on
-            pmttran.prt_id=party.id where type in("P", "B", "W", "C", "D", "G") and
+            party.description as party, acc_id,
+            account.description as account,
+            comment, amount from pmttran
+            left join party on pmttran.prt_id=party.id
+            left join account on pmttran.acc_id=account.id
+            where type in("P", "B", "W", "C", "D", "G") and
             date between ? and ? order by pmttran.date desc`, dtfr, dtto)
 	err8 := DB.Select(&repAmRecd, `select type, date, prt_id,
-            party.description as party, comment, amount from pmttran left join party on
-            pmttran.prt_id=party.id where type in("S", "T", "H") and
+            party.description as party,
+            account.description as account,
+            comment, amount from pmttran
+            left join party on pmttran.prt_id=party.id
+            left join account on pmttran.acc_id=account.id
+            where type in("S", "T", "H") and
             date between ? and ? order by pmttran.date desc`, dtfr, dtto)
 	if err1 == nil && err2 == nil && err3 == nil && err4 == nil && err5 == nil && err6 == nil && err7 == nil && err8 == nil {
 		c.JSON(http.StatusOK, gin.H{"cssale": repCsSale,
