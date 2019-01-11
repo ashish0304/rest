@@ -1,17 +1,20 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"github.com/gchaincl/sqlhooks"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
+	"log"
 	"os"
 )
 
 var keySecret string
 var Router *gin.Engine
-var DB *sqlx.DB
+var logSql *log.Logger
 
 func main() {
 	keySecret = os.Getenv("SERVERKEY")
@@ -21,15 +24,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	DB = sqlx.MustConnect("sqlite3", "/sdcard/myshop/myshop.db3")
+	sql.Register("sqlite3WithHooks", sqlhooks.Wrap(&sqlite3.SQLiteDriver{}, &Hooks{}))
+
+	DB = sqlx.MustConnect("sqlite3WithHooks", "/sdcard/myshop/myshop.db3")
 	defer DB.Close()
+
+	f, err := os.OpenFile(os.Getenv("HOME")+"/myshop.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	logSql = log.New(f, "", log.LstdFlags)
 	DB.Exec("PRAGMA foreign_keys = ON;")
+
 	Router = gin.Default()
 
 	authSales := Router.Group("/api")
 	authSales.Use(AuthSales)
 
- authAdmin := Router.Group("/api")
+	authAdmin := Router.Group("/api")
 	authAdmin.Use(AuthAdmin)
 
 	Router.Use(static.Serve("/", static.LocalFile("./static", true)))
@@ -64,19 +78,19 @@ func main() {
 	authSales.GET("/acctrans", acctrans)
 	authSales.GET("/payments", payments)
 
- authAdmin.PUT("/party", partyupdate)
- authAdmin.PUT("/rawstran", pstran)
+	authAdmin.PUT("/party", partyupdate)
+	authAdmin.PUT("/rawstran", pstran)
 	authAdmin.GET("/rawstran", gstran)
 	authAdmin.PUT("/rawptran", pptran)
 	authAdmin.GET("/rawptran", gptran)
- authAdmin.PUT("/clrstk", clrstk)
+	authAdmin.PUT("/clrstk", clrstk)
 	authAdmin.PUT("/expinv", expinv)
 	authAdmin.PUT("/clrinv", clrinv)
- authAdmin.POST("/location", locationadd)
+	authAdmin.POST("/location", locationadd)
 	authAdmin.PUT("/location", locationupdate)
- authAdmin.POST("/account", accountadd)
+	authAdmin.POST("/account", accountadd)
 	authAdmin.PUT("/account", accountupdate)
- authAdmin.PUT("/chequehonor", chequehonor)
+	authAdmin.PUT("/chequehonor", chequehonor)
 	authAdmin.PUT("/chequecancel", chequecancel)
 
 	Router.POST("/api/login", login)

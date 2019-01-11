@@ -1,13 +1,11 @@
 package main
 
 import (
- _"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 )
 
 func AuthSales(c *gin.Context) {
@@ -16,17 +14,15 @@ func AuthSales(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	//fmt.Println(ck)
 	cl, err1 := parseToken(ck.Value)
 	if err1 != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
- //fmt.Println(cl.(jwt.MapClaims))
- if (uint32(cl.(jwt.MapClaims)["acc"].(float64)) & UserSales) != UserSales {
-  c.AbortWithStatus(http.StatusForbidden)
-  return
- }
+	if (uint32(cl.(jwt.MapClaims)["acc"].(float64)) & UserSales) != UserSales {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 
 	c.Set("usr_id", cl.(jwt.MapClaims)["usr"])
 	c.Next()
@@ -38,17 +34,15 @@ func AuthAdmin(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	//fmt.Println(ck)
 	cl, err1 := parseToken(ck.Value)
 	if err1 != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
- //fmt.Println(cl.(jwt.MapClaims))
- if (uint32(cl.(jwt.MapClaims)["acc"].(float64)) & UserAdmin) != UserAdmin {
-  c.AbortWithStatus(http.StatusForbidden)
-  return
- }
+	if (uint32(cl.(jwt.MapClaims)["acc"].(float64)) & UserAdmin) != UserAdmin {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
 
 	c.Set("usr_id", cl.(jwt.MapClaims)["usr"])
 	c.Next()
@@ -90,7 +84,6 @@ func login(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	//fmt.Printf("%#v", usr)
 	tk := createToken(&usr)
 	ck := http.Cookie{
 		Name:     "token",

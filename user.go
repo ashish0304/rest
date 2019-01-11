@@ -1,13 +1,8 @@
 package main
 
-import (
-	_ "github.com/dgrijalva/jwt-go"
-	_ "github.com/gin-gonic/gin"
-)
-
 const (
- UserSales   uint32 = 1
- UserAdmin   uint32 = 0xffffffff
+	UserSales uint32 = 1
+	UserAdmin uint32 = 0xffffffff
 )
 
 type User struct {

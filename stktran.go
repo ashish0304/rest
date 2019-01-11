@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"net/http"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strconv"
 )
 
@@ -110,6 +110,8 @@ func stktran(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "Error: Unknown transaction types")
 		return
 	}
+
+	logSql.Println("==========STKTRAN==========")
 	//check for dummy locations
 	var dummyLcn, dummyTgt bool
 	DB.QueryRow("SELECT dummy FROM location WHERE id=?", stktran.Lcn_id).Scan(&dummyLcn)
@@ -410,12 +412,15 @@ func stktran(c *gin.Context) {
 			}
 		}
 	}
+	logSql.Println("**********STKTRAN**********")
+
 	err = tx.Commit()
 	if err != nil {
 		fmt.Println(err)
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, err)
 	}
+
 	stStktran.Close()
 	stPmttran.Close()
 	stStockUpd.Close()

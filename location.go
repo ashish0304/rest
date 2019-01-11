@@ -1,8 +1,8 @@
 package main
 
 import (
-	"net/http"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 type Location struct {
@@ -19,7 +19,6 @@ type Location struct {
 func location(c *gin.Context) {
 	locations := []Location{}
 	err := DB.Select(&locations, "select * from location")
-	//fmt.Printf("%#v", locations)
 	if err == nil {
 		c.JSON(http.StatusOK, locations)
 	} else {

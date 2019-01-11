@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strconv"
 )
 
@@ -80,7 +80,6 @@ func invs(c *gin.Context) {
             left join item on inventory.itm_id=item.id
             where inventory.id='` + id + "' and lcn_id=" + lcn_id
 	}
-	//fmt.Println(strQ)
 	outs := []Inventory{}
 	err := DB.Select(&outs, strQ)
 	if err == nil {

@@ -93,9 +93,10 @@ func pmttran(c *gin.Context) {
 	qAccUpd := `update account set balance=balance + ? where id=?`
 	var stPmttran, stPrtUpd, stAccUpd, stChqUpd, stChqCrt *sql.Stmt
 
+	logSql.Println("==========PMTTRAN==========")
 	//get usr id from context
 	pmttran.Usr_id = c.MustGet("usr_id").(string)
- //fmt.Println(pmttran)
+	//fmt.Println(pmttran)
 	tx, err := DB.Begin()
 	if err != nil {
 		goto error
@@ -203,6 +204,8 @@ func pmttran(c *gin.Context) {
 		fmt.Println(err)
 		tx.Rollback()
 	}
+	logSql.Println("**********PMTTRAN**********")
+
 	stPmttran.Close()
 	stPrtUpd.Close()
 	stChqUpd.Close()
@@ -253,7 +256,6 @@ func prtpayments(c *gin.Context) {
          where prt_id=? order by date desc limit ?,?`, id, offset, limit)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
-		//fmt.Println(err)
 	} else {
 		c.JSON(http.StatusOK, pmts)
 	}
@@ -300,7 +302,6 @@ func gptran(c *gin.Context) {
 		"where (acc_id=? or ?='') and (type=? or ?='') "+
 		"order by date desc limit ?,?", acc, acc, typ, typ, off, lim)
 	if err == nil {
-		//fmt.Println(ptran)
 		c.JSON(http.StatusOK, gin.H{"len": length, "rows": ptran})
 	} else {
 		fmt.Println(err)
