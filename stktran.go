@@ -560,6 +560,39 @@ func prtitems(c *gin.Context) {
 	}
 }
 
+func partystk(c *gin.Context) {
+	id := c.Param("id")
+	dtfr, e1 := strconv.Atoi(c.Request.URL.Query().Get("dtfr"))
+	if e1 != nil {
+		dtfr = 0
+	}
+	dtto, e2 := strconv.Atoi(c.Request.URL.Query().Get("dtto"))
+	if e2 != nil {
+		dtto = 0
+	}
+	itmS := []PartyItms{}
+	itmP := []PartyItms{}
+	e1 = DB.Select(&itmS, `select type, date,
+         item.description as item, quantity, rate from stktran 
+         left join item on itm_id=item.id
+         left join location on lcn_id=location.id
+         where dummy=0 and prt_id=?
+         and type='S' and date between ? and ?
+         order by date desc`, id, dtfr, dtto)
+	e2 = DB.Select(&itmP, `select type, date,
+         item.description as item, quantity, rate from stktran 
+         left join item on itm_id=item.id
+         left join location on lcn_id=location.id
+         where dummy=0 and prt_id=?
+         and type='P' and date between ? and ?
+         order by date desc`, id, dtfr, dtto)
+	if e1 != nil || e2 != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"sale": e1, "purchase": e2})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"sale": itmS, "purchase": itmP})
+	}
+}
+
 func replcnstat(c *gin.Context) {
 	repLocn := []Locnstat{}
 	locn := c.Request.URL.Query().Get("locn")

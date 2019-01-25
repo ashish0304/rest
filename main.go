@@ -60,6 +60,7 @@ func main() {
 	authSales.GET("/party/:id/payments", prtpayments)
 	authSales.GET("/party/:id/items", prtitems)
 	authSales.GET("/partyacc/:desc", partyacc)
+	authSales.GET("/partystk/:id", partystk)
 	authSales.GET("/partiesbal", partiesbal)
 	authSales.GET("/cheques", cheques)
 	authSales.GET("/account", account)
@@ -92,6 +93,7 @@ func main() {
 	authAdmin.PUT("/account", accountupdate)
 	authAdmin.PUT("/chequehonor", chequehonor)
 	authAdmin.PUT("/chequecancel", chequecancel)
+	authAdmin.GET("/log", dumplog)
 
 	Router.POST("/api/login", login)
 	Router.GET("/api/logout", logout)
