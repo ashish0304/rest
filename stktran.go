@@ -171,7 +171,7 @@ func stktran(c *gin.Context) {
 	}
 	if !dummyLcn {
 		stktran.Flg_merge = false
-		stktran.Flg_total = false
+		stktran.Flg_total = true
 		if stktran.Type == "P" {
 			stktran.Flg_cost = true
 		}
