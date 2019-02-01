@@ -17,7 +17,9 @@ func (h *Hooks) Before(ctx context.Context, query string, args ...interface{}) (
 
 func (h *Hooks) After(ctx context.Context, query string, args ...interface{}) (context.Context, error) {
 	logSql.Println(strings.Join(strings.Fields(query), " "))
-	if len(args) > 0 { logSql.Println(args) }
+	if len(args) > 0 {
+		logSql.Println(args)
+	}
 	return ctx, nil
 }
 
