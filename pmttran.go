@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 )
 
 type Pmttran struct {
@@ -19,46 +18,6 @@ type Pmttran struct {
 	Comment    string    `db:"comment" json:"comment"`
 	Usr_id     string    `db:"usr_id" json:"usr_id"`
 	Tgt_acc_id uint32    `db:"tgt_acc_id" json:"tgt_acc_id"`
-}
-
-type Payments struct {
-	Type    string     `db:"type" json:"type"`
-	Date    int64      `db:"date" json:"date"`
-	Prt_id  NullInt64  `db:"prt_id" json:"prt_id"`
-	Party   NullString `db:"party" json:"party"`
-	Account NullString `db:"account" json:"account"`
-	Amount  float32    `db:"amount" json:"amount"`
-	Comment NullString `db:"comment" json:"comment"`
-}
-
-type PartyPmts struct {
-	Type    string     `db:"type" json:"type"`
-	Date    int64      `db:"date" json:"date"`
-	Account NullString `db:"account" json:"account"`
-	Amount  float32    `db:"amount" json:"amount"`
-	Comment NullString `db:"comment" json:"comment"`
-}
-
-type Acctrans struct {
-	Type    string     `db:"type" json:"type"`
-	Date    int64      `db:"date" json:"date"`
-	Prt_id  NullInt64  `db:"prt_id" json:"prt_id"`
-	Party   NullString `db:"party" json:"party"`
-	Amount  float32    `db:"amount" json:"amount"`
-	Comment NullString `db:"comment" json:"comment"`
-}
-
-type Ptran struct {
-	Rid     int64      `db:"rowid" json:"rowid"`
-	Type    string     `db:"type" json:"type"`
-	Date    int64      `db:"date" json:"date"`
-	Prt_id  NullInt64  `db:"prt_id" json:"prt_id"`
-	Txn_id  NullInt64  `db:"txn_id" json:"txn_id"`
-	Acc_id  NullInt64  `db:"acc_id" json:"acc_id"`
-	Amount  float32    `db:"amount" json:"amount"`
-	Comment NullString `db:"comment" json:"comment"`
-	Usr_id  NullString `db:"usr_id" json:"usr_id"`
-	Flag    NullString `db:"flag" json:"flag"`
 }
 
 func pmttran(c *gin.Context) {
@@ -215,117 +174,4 @@ func pmttran(c *gin.Context) {
 error:
 	fmt.Println(err)
 	c.JSON(http.StatusInternalServerError, err)
-}
-
-func payments(c *gin.Context) {
-	pmts := []Payments{}
-	offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-	if e1 != nil {
-		offset = -1
-	}
-	limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-	if e2 != nil {
-		limit = -1
-	}
-	err := DB.Select(&pmts, `select type, date, prt_id, party.description as party, 
-         account.description as account, amount, comment
-         from pmttran left join account on acc_id=account.id
-         left join party on prt_id=party.id order by date desc limit ?,?`, offset, limit)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
-		fmt.Println(err)
-	} else {
-		c.JSON(http.StatusOK, pmts)
-	}
-}
-
-func prtpayments(c *gin.Context) {
-	id := c.Param("id")
-	offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-	if e1 != nil {
-		offset = -1
-	}
-	limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-	if e2 != nil {
-		limit = -1
-	}
-	pmts := []PartyPmts{}
-	err := DB.Select(&pmts, `select type, date,
-         account.description as account, amount, comment
-         from pmttran left join account on acc_id=account.id
-         where prt_id=? order by date desc limit ?,?`, id, offset, limit)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
-	} else {
-		c.JSON(http.StatusOK, pmts)
-	}
-}
-
-func acctrans(c *gin.Context) {
-	pmts := []Acctrans{}
-	acc, e0 := strconv.Atoi(c.Request.URL.Query().Get("acc"))
-	if e0 != nil {
-		acc = 0
-	}
-	offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-	if e1 != nil {
-		offset = -1
-	}
-	limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-	if e2 != nil {
-		limit = -1
-	}
-	DB.Select(&pmts, `select type, date,
-         prt_id, party.description as party, amount, comment
-         from pmttran left join party on prt_id=party.id where acc_id=?
-         order by date desc limit ?,?`, acc, offset, limit)
-	c.JSON(http.StatusOK, pmts)
-}
-
-func gptran(c *gin.Context) {
-	var length int
-	ptran := []Ptran{}
-	ln, _ := strconv.ParseBool(c.Request.URL.Query().Get("length"))
-	acc := c.Request.URL.Query().Get("acc")
-	typ := c.Request.URL.Query().Get("type")
-	off := c.Request.URL.Query().Get("offset")
-	lim := c.Request.URL.Query().Get("limit")
-
-	if ln {
-		rw := DB.QueryRow("select count() from pmttran "+
-			"where (acc_id=? or ?='') "+
-			"and (type=? or ?='') "+
-			"order by date desc", acc, acc, typ, typ)
-		rw.Scan(&length)
-	}
-	err := DB.Select(&ptran, "select rowid, * from pmttran "+
-		"where (acc_id=? or ?='') and (type=? or ?='') "+
-		"order by date desc limit ?,?", acc, acc, typ, typ, off, lim)
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{"len": length, "rows": ptran})
-	} else {
-		fmt.Println(err)
-	}
-}
-
-func pptran(c *gin.Context) {
-	ptran := Ptran{}
-	if err := c.BindJSON(&ptran); err != nil {
-		c.JSON(http.StatusBadRequest, err)
-		fmt.Printf("%#v \n%#v", ptran, err)
-		return
-	}
-	_, err := DB.NamedExec("update pmttran set type=:type, date=:date, "+
-		"prt_id=case when :prt_id=0 then null else :prt_id end, "+
-		"txn_id=case when :txn_id=0 then null else :txn_id end, "+
-		"acc_id=case when :acc_id=0 then null else :acc_id end, "+
-		"usr_id=case when :usr_id='' then null else :usr_id end, "+
-		"amount=:amount, comment=:comment, flag=:flag "+
-		"where rowid=:rowid", &ptran)
-	if err != nil {
-		fmt.Println(ptran, err)
-		c.JSON(http.StatusBadRequest, err)
-	} else {
-		c.JSON(http.StatusOK, ptran)
-	}
 }

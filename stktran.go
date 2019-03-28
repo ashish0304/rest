@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 )
 
 type Stock struct {
@@ -31,64 +30,6 @@ type Stktran struct {
 	Flg_total  bool    `json:"flg_total"`
 	Usr_id     string  `json:"usr_id"`
 	Stocks     []Stock `json:"stocks"`
-}
-
-type ItemTran struct {
-	Type     string  `db:"type" json:"type"`
-	Date     int64   `db:"date" json:"date"`
-	Quantity int32   `db:"quantity" json:"quantity"`
-	Rate     float32 `db:"rate" json:"rate"`
-}
-
-type Stkrep struct {
-	Date        int64       `json:"date" db:"date"`
-	Itm_id      uint32      `json:"itm_id" db:"itm_id"`
-	Description string      `json:"description" db:"description"`
-	Quantity    int32       `json:"quantity" db:"quantity"`
-	Rate        float32     `json:"rate" db:"rate"`
-	Cost        NullFloat64 `json:"cost" db:"cost"`
-}
-
-type Amtrep struct {
-	Type    string     `json:"type" db:"type"`
-	Date    int64      `json:"date" db:"date"`
-	Prt_id  NullInt64  `json:"prt_id" db:"prt_id"`
-	Party   NullString `json:"party" db:"party"`
-	Acc_id  NullInt64  `json:"acc_id" db:"acc_id"`
-	Account NullString `json:"account" db:"account"`
-	Comment NullString `json:"comment" db:"comment"`
-	Amount  float32    `json:"amount" db:"amount"`
-}
-
-type Locnstat struct {
-	Type   string      `json:"type" db:"type"`
-	Amount float32     `json:"amount" db:"amount"`
-	Tax    NullFloat64 `json:"tax" db:"tax"`
-}
-
-type PartyItms struct {
-	Type     string  `db:"type" json:"type"`
-	Date     int64   `db:"date" json:"date"`
-	Item     string  `db:"item" json:"item"`
-	Quantity int32   `db:"quantity" json:"quantity"`
-	Rate     float32 `db:"rate" json:"rate"`
-}
-
-type Stran struct {
-	Rid      uint32      `json:"rowid" db:"rowid"`
-	Id       uint32      `json:"id" db:"id"`
-	Type     string      `json:"type" db:"type"`
-	Date     int64       `json:"date" db:"date"`
-	Lcn_id   uint32      `json:"lcn_id" db:"lcn_id"`
-	Prt_id   NullInt64   `json:"prt_id" db:"prt_id"`
-	Itm_id   uint32      `json:"itm_id" db:"itm_id"`
-	Quantity int32       `json:"quantity" db:"quantity"`
-	Rate     float32     `json:"rate" db:"rate"`
-	Value    float32     `json:"value" db:"value"`
-	Tax      NullFloat64 `json:"tax" db:"tax"`
-	Cost     NullFloat64 `json:"cost" db:"cost"`
-	Usr_id   NullString  `json:"usr_id" db:"usr_id"`
-	Flag     NullString  `json:"flag" db:"flag"`
 }
 
 func stktran(c *gin.Context) {
@@ -155,8 +96,10 @@ func stktran(c *gin.Context) {
 	var acc, prt uint32
 	if stktran.PrtAcc_id < 0 {
 		acc = uint32(stktran.PrtAcc_id * -1)
+		stktran.Prt_exp = 0
 	} else if stktran.PrtAcc_id == 0 {
 		acc = 1
+		stktran.Prt_exp = 0
 	} else {
 		prt = uint32(stktran.PrtAcc_id)
 	}
@@ -177,7 +120,6 @@ func stktran(c *gin.Context) {
 		}
 	}
 	if stktran.Type != "P" {
-		stktran.Prt_exp = 0
 		stktran.Flg_cost = false
 	}
 
@@ -324,6 +266,7 @@ func stktran(c *gin.Context) {
 			}
 
 			fTranValue -= stk.Value + stk.Tax
+			stktran.Prt_exp *= -1
 		case "T":
 			_, err = stStockUpd.Exec(stk.Quantity, stk.Quantity, stktran.Lcn_id, stk.Itm_id)
 			if err != nil {
@@ -366,10 +309,10 @@ func stktran(c *gin.Context) {
 
 	//update party balance
 	if fTranValue != 0 {
-		exp := stktran.Expense + stktran.Prt_exp
+		stktran.Expense *= -1
 		if acc > 0 {
 			if stktran.Flg_total {
-				_, err = stAccUpd.Exec(fTranValue+exp*-1, acc)
+				_, err = stAccUpd.Exec(fTranValue+stktran.Expense, acc)
 				if err != nil {
 					goto error
 				}
@@ -380,34 +323,29 @@ func stktran(c *gin.Context) {
 					goto error
 				}
 			}
-			if exp != 0 {
-				_, err = stPmttran.Exec(tid, "B", stktran.Date, acc, nil, exp*-1, stktran.Usr_id)
+			if stktran.Expense != 0 {
+				_, err = stPmttran.Exec(tid, "B", stktran.Date, acc, nil, stktran.Expense, stktran.Usr_id)
 				if err != nil {
 					goto error
 				}
 			}
 		} else if !dummyLcn || (dummyLcn && stktran.Flg_total) {
-			if stktran.Type == "P" {
-				_, err = stPrtUpd.Exec(fTranValue+stktran.Prt_exp*-1, prt)
-			} else {
-				_, err = stPrtUpd.Exec(fTranValue+stktran.Expense, prt)
-			}
-
+			_, err = stPrtUpd.Exec(fTranValue+stktran.Prt_exp, prt)
 			if err != nil {
 				goto error
 			}
 			if stktran.Expense != 0 {
-				_, err = stPmttran.Exec(tid, "B", stktran.Date, 1, prt, stktran.Expense*-1, stktran.Usr_id)
+				_, err = stPmttran.Exec(tid, "B", stktran.Date, 1, nil, stktran.Expense, stktran.Usr_id)
 				if err != nil {
 					goto error
 				}
-				_, err = stAccUpd.Exec(stktran.Expense*-1, 1)
+				_, err = stAccUpd.Exec(stktran.Expense, 1)
 				if err != nil {
 					goto error
 				}
 			}
 			if stktran.Prt_exp != 0 {
-				_, err = stPmttran.Exec(tid, "B", stktran.Date, nil, prt, stktran.Prt_exp*-1, stktran.Usr_id)
+				_, err = stPmttran.Exec(tid, "B", stktran.Date, nil, prt, stktran.Prt_exp, stktran.Usr_id)
 				if err != nil {
 					goto error
 				}
@@ -441,222 +379,4 @@ func getLastID(l uint32, t string) uint32 {
 	var id uint32
 	DB.QueryRow(fmt.Sprintf(`select lst_%sid from location where id=?`, t), l).Scan(&id)
 	return id
-}
-
-func repdateitm(c *gin.Context) {
-	repCsSale := []Stkrep{}
-	repCrSale := []Stkrep{}
-	repCsPurc := []Stkrep{}
-	repCrPurc := []Stkrep{}
-	repTsfr := []Stkrep{}
-	repAdjt := []Stkrep{}
-	repAmPaid := []Amtrep{}
-	repAmRecd := []Amtrep{}
-	id := c.Request.URL.Query().Get("id")
-	dtfr := c.Request.URL.Query().Get("dtfr")
-	dtto := c.Request.URL.Query().Get("dtto")
-	err1 := DB.Select(&repCsSale, `select date,
-            itm_id, item.description, quantity, stktran.rate, stktran.cost from stktran
-            left join item on stktran.itm_id=item.id where type='S' and
-            prt_id is null and lcn_id=? and date between ? and ?
-            order by stktran.date desc`, id, dtfr, dtto)
-	err2 := DB.Select(&repCrSale, `select date,
-            itm_id, item.description, quantity, stktran.rate, stktran.cost from stktran
-            left join item on stktran.itm_id=item.id where type='S' and
-            prt_id is not null and lcn_id=? and date between ? and ?
-            order by stktran.date desc`, id, dtfr, dtto)
-	err3 := DB.Select(&repCsPurc, `select date,
-            itm_id, item.description, quantity, stktran.rate from stktran
-            left join item on stktran.itm_id=item.id where type='P' and
-            prt_id is null and lcn_id=? and date between ? and ?
-            order by stktran.date desc`, id, dtfr, dtto)
-	err4 := DB.Select(&repCrPurc, `select date,
-            itm_id, item.description, quantity, stktran.rate from stktran
-            left join item on stktran.itm_id=item.id where type='P' and
-            prt_id is not null and lcn_id=? and date between ? and ?
-            order by stktran.date desc`, id, dtfr, dtto)
-	err5 := DB.Select(&repTsfr, `select date,
-            itm_id, item.description, quantity, stktran.rate from stktran
-            left join item on stktran.itm_id=item.id where type='T' and
-            lcn_id=? and date between ? and ?
-            order by stktran.date desc`, id, dtfr, dtto)
-	err6 := DB.Select(&repAdjt, `select date,
-            itm_id, item.description, quantity, stktran.rate from stktran
-            left join item on stktran.itm_id=item.id where type='A' and
-            lcn_id=? and date between ? and ?
-            order by stktran.date desc`, id, dtfr, dtto)
-	err7 := DB.Select(&repAmPaid, `select type, date, prt_id,
-            party.description as party, acc_id,
-            account.description as account,
-            comment, amount from pmttran
-            left join party on pmttran.prt_id=party.id
-            left join account on pmttran.acc_id=account.id
-            where type in("P", "B", "W", "C", "D", "G") and
-            date between ? and ? order by pmttran.date desc`, dtfr, dtto)
-	err8 := DB.Select(&repAmRecd, `select type, date, prt_id,
-            party.description as party,
-            account.description as account,
-            comment, amount from pmttran
-            left join party on pmttran.prt_id=party.id
-            left join account on pmttran.acc_id=account.id
-            where type in("S", "T", "H") and
-            date between ? and ? order by pmttran.date desc`, dtfr, dtto)
-	if err1 == nil && err2 == nil && err3 == nil && err4 == nil && err5 == nil && err6 == nil && err7 == nil && err8 == nil {
-		c.JSON(http.StatusOK, gin.H{"cssale": repCsSale,
-			"crsale": repCrSale,
-			"cspurc": repCsPurc,
-			"crpurc": repCrPurc,
-			"tsfr":   repTsfr,
-			"adjt":   repAdjt,
-			"ampaid": repAmPaid,
-			"amrecd": repAmRecd})
-	} else {
-		fmt.Print(err1, err2, err3, err4,
-			err5, err6, err7, err8)
-	}
-}
-
-func itemtran(c *gin.Context) {
-	id := c.Param("id")
-	offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-	if e1 != nil {
-		offset = -1
-	}
-	limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-	if e2 != nil {
-		limit = -1
-	}
-	trns := []ItemTran{}
-	err := DB.Select(&trns, `select type, date,
-         quantity, rate from stktran where itm_id=?
-         order by date desc limit ?,?`, id, offset, limit)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
-		//fmt.Println(err)
-	} else {
-		c.JSON(http.StatusOK, trns)
-	}
-}
-
-func prtitems(c *gin.Context) {
-	id := c.Param("id")
-	offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
-	if e1 != nil {
-		offset = -1
-	}
-	limit, e2 := strconv.Atoi(c.Request.URL.Query().Get("limit"))
-	if e2 != nil {
-		limit = -1
-	}
-	itms := []PartyItms{}
-	err := DB.Select(&itms, `select type, date,
-         item.description as item, quantity, rate from stktran 
-         left join item on itm_id=item.id
-         left join location on lcn_id=location.id where dummy=0 and prt_id=?
-         order by date desc limit ?,?`, id, offset, limit)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
-		//fmt.Println(err)
-	} else {
-		c.JSON(http.StatusOK, itms)
-	}
-}
-
-func partystk(c *gin.Context) {
-	id := c.Param("id")
-	dtfr, e1 := strconv.Atoi(c.Request.URL.Query().Get("dtfr"))
-	if e1 != nil {
-		dtfr = 0
-	}
-	dtto, e2 := strconv.Atoi(c.Request.URL.Query().Get("dtto"))
-	if e2 != nil {
-		dtto = 0
-	}
-	itmS := []PartyItms{}
-	itmP := []PartyItms{}
-	e1 = DB.Select(&itmS, `select type, date,
-         item.description as item, quantity, rate from stktran 
-         left join item on itm_id=item.id
-         left join location on lcn_id=location.id
-         where dummy=0 and prt_id=?
-         and type='S' and date between ? and ?
-         order by date desc`, id, dtfr, dtto)
-	e2 = DB.Select(&itmP, `select type, date,
-         item.description as item, quantity, rate from stktran 
-         left join item on itm_id=item.id
-         left join location on lcn_id=location.id
-         where dummy=0 and prt_id=?
-         and type='P' and date between ? and ?
-         order by date desc`, id, dtfr, dtto)
-	if e1 != nil || e2 != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"sale": e1, "purchase": e2})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"sale": itmS, "purchase": itmP})
-	}
-}
-
-func replcnstat(c *gin.Context) {
-	repLocn := []Locnstat{}
-	locn := c.Request.URL.Query().Get("locn")
-	mnth := c.Request.URL.Query().Get("month")
-	err := DB.Select(&repLocn, `
-         select (type || ':' || round((tax/(value/100)),1)) as type,
-         round(sum(value), 2) as amount, round(sum(tax), 2) as tax from stktran
-         where lcn_id=? and strftime('%Y-%m', date, 'unixepoch')=? and value != 0
-         group by type, round((tax/(value/100)),1) order by type`, locn, mnth)
-	if err == nil {
-		c.JSON(http.StatusOK, repLocn)
-	} else {
-		fmt.Println(err)
-	}
-}
-
-func gstran(c *gin.Context) {
-	var length int
-	stran := []Stran{}
-	ln, _ := strconv.ParseBool(c.Request.URL.Query().Get("length"))
-	id := c.Request.URL.Query().Get("id")
-	lcn := c.Request.URL.Query().Get("lcn")
-	typ := c.Request.URL.Query().Get("type")
-	off := c.Request.URL.Query().Get("offset")
-	lim := c.Request.URL.Query().Get("limit")
-
-	if ln {
-		rw := DB.QueryRow("select count() from stktran "+
-			"where (id=? or ?='') "+
-			"and (type=? or ?='') "+
-			"and (lcn_id=? or ?='') order by date desc", id, id, typ, typ, lcn, lcn)
-		rw.Scan(&length)
-	}
-	err := DB.Select(&stran, "select rowid, * from stktran "+
-		"where (id=? or ?='') and (type=? or ?='') "+
-		"and (lcn_id=? or ?='') order by date desc limit ?,?", id, id, typ, typ, lcn, lcn, off, lim)
-	if err == nil {
-		//fmt.Println(stran)
-		c.JSON(http.StatusOK, gin.H{"len": length, "rows": stran})
-	} else {
-		fmt.Println(err)
-	}
-}
-
-func pstran(c *gin.Context) {
-	stran := Stran{}
-	if err := c.BindJSON(&stran); err != nil {
-		c.JSON(http.StatusBadRequest, err)
-		fmt.Printf("%#v \n%#v", stran, err)
-		return
-	}
-	_, err := DB.NamedExec("update stktran set id=:id, "+
-		"type=:type, date=:date, lcn_id=:lcn_id, "+
-		"prt_id=case when :prt_id=0 then null else :prt_id end, "+
-		"usr_id=case when :usr_id='' then null else :usr_id end, "+
-		"itm_id=:itm_id, quantity=:quantity, "+
-		"rate=:rate, value=:value, tax=:tax, "+
-		"cost=:cost, flag=:flag where rowid=:rowid", &stran)
-	if err != nil {
-		fmt.Println(stran, err)
-		c.JSON(http.StatusBadRequest, err)
-	} else {
-		c.JSON(http.StatusOK, stran)
-	}
 }

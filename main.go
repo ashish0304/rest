@@ -59,6 +59,7 @@ func main() {
 	authSales.POST("/party", partyadd)
 	authSales.GET("/party/:id/payments", prtpayments)
 	authSales.GET("/party/:id/items", prtitems)
+	authSales.GET("/party/:id/summary", prtsumry)
 	authSales.GET("/partyacc/:desc", partyacc)
 	authSales.GET("/partystk/:id", partystk)
 	authSales.GET("/partiesbal", partiesbal)
@@ -80,10 +81,6 @@ func main() {
 	authSales.GET("/payments", payments)
 
 	authAdmin.PUT("/party", partyupdate)
-	authAdmin.PUT("/rawstran", pstran)
-	authAdmin.GET("/rawstran", gstran)
-	authAdmin.PUT("/rawptran", pptran)
-	authAdmin.GET("/rawptran", gptran)
 	authAdmin.PUT("/clrstk", clrstk)
 	authAdmin.PUT("/expinv", expinv)
 	authAdmin.PUT("/clrinv", clrinv)
