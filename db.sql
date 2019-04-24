@@ -61,6 +61,7 @@ value DOUBLE DEFAULT 0,
 tax DOUBLE DEFAULT 0,
 cost DOUBLE DEFAULT 0,
 usr_id VARCHAR(10) REFERENCES user(id),
+invoice CHAR,
 flag CHAR);
 CREATE TABLE stock (
 lcn_id INTEGER  NOT NULL REFERENCES location(id),

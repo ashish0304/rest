@@ -19,6 +19,7 @@ type Stock struct {
 type Stktran struct {
 	Type       string  `json:"type"`
 	Date       int64   `json:"date"`
+ Invoice    string  `json:"invoice"`
 	Lcn_id     uint32  `json:"lcn_id"`
 	PrtAcc_id  int32   `json:"prt_id"`
 	Tgt_lcn_id uint32  `json:"tgt_lcn_id"`
@@ -131,9 +132,9 @@ func stktran(c *gin.Context) {
 	}
 	//return
 	qStktran := `INSERT INTO stktran(id, type,
-               date, lcn_id, prt_id, itm_id,
+               invoice, date, lcn_id, prt_id, itm_id,
                quantity, rate, tax, value, cost, usr_id)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`
 	qPmttran := `insert into pmttran (txn_id, type, date, acc_id,
                prt_id, amount, usr_id) values(?,?,?,?,?,?,?)`
 
@@ -193,7 +194,7 @@ func stktran(c *gin.Context) {
 	}
 
 	for _, stk := range stktran.Stocks {
-		_, err = stStktran.Exec(tid, stktran.Type, stktran.Date,
+		_, err = stStktran.Exec(tid, stktran.Type, stktran.Invoice, stktran.Date,
 			stktran.Lcn_id, NullZero(prt), stk.Itm_id, stk.Quantity,
 			stk.Rate, stk.Tax, stk.Value, stk.Cost, stktran.Usr_id)
 		if err != nil {
@@ -210,7 +211,7 @@ func stktran(c *gin.Context) {
 				tValue *= -1
 				tCost *= -1
 			}
-			_, err = stStktran.Exec(ttid, stktran.Type, stktran.Date,
+			_, err = stStktran.Exec(ttid, stktran.Type, stktran.Invoice, stktran.Date,
 				stktran.Tgt_lcn_id, NullZero(prt), stk.Itm_id, tQuantity,
 				stk.Rate, tTax, tValue, tCost, stktran.Usr_id)
 			if err != nil {
