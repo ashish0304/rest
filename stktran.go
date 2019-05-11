@@ -19,7 +19,7 @@ type Stock struct {
 type Stktran struct {
 	Type       string  `json:"type"`
 	Date       int64   `json:"date"`
- Invoice    string  `json:"invoice"`
+	Invoice    string  `json:"invoice"`
 	Lcn_id     uint32  `json:"lcn_id"`
 	PrtAcc_id  int32   `json:"prt_id"`
 	Tgt_lcn_id uint32  `json:"tgt_lcn_id"`

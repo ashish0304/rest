@@ -48,12 +48,13 @@ type PartyItms struct {
 }
 
 type PartySumry struct {
-	Id     string     `db:"id" json:"id"`
-	Lcn_id NullInt64  `json:"lcn_id" db:"lcn_id"`
-	Locn   NullString `db:"locn" json:"locn"`
-	Type   string     `db:"type" json:"type"`
-	Date   int64      `db:"date" json:"date"`
-	Amount float32    `db:"amount" json:"amount"`
+	Id      string     `db:"id" json:"id"`
+	Lcn_id  NullInt64  `json:"lcn_id" db:"lcn_id"`
+	Locn    NullString `db:"locn" json:"locn"`
+	Type    string     `db:"type" json:"type"`
+	Invoice NullString `db:"invoice" json:"invoice"`
+	Date    int64      `db:"date" json:"date"`
+	Amount  float32    `db:"amount" json:"amount"`
 }
 
 type Payments struct {
@@ -81,4 +82,16 @@ type Acctrans struct {
 	Party   NullString `db:"party" json:"party"`
 	Amount  float32    `db:"amount" json:"amount"`
 	Comment NullString `db:"comment" json:"comment"`
+}
+
+type GSTReps struct {
+	Type string `db:"type" json:"type"`
+	Date int64 `db:"date" json:"date"`
+	Invoice NullString `db:"invoice" json:"invoice"`
+	Party NullString `db:"party" json:"party"`
+	GSTN NullString `db:"gstn" json:"gstn"`
+	HSN NullString `db:"hsn" json:"hsn"`
+	TRate NullFloat64 `db:"trate" json:"trate"`
+	Amount float32 `db:"amount" json:"amount"`
+	Tax NullFloat64 `db:"tax" json:"tax"`
 }

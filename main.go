@@ -79,6 +79,7 @@ func main() {
 	authSales.POST("/pmttran", pmttran)
 	authSales.GET("/acctrans", acctrans)
 	authSales.GET("/payments", payments)
+    authSales.GET("/gstrep", gstreps)
 
 	authAdmin.PUT("/party", partyupdate)
 	authAdmin.PUT("/clrstk", clrstk)

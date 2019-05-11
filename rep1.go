@@ -115,7 +115,7 @@ func prtsumry(c *gin.Context) {
 	id := c.Param("id")
 	sumry := []PartySumry{}
 	err := DB.Select(&sumry, `select (lcn_id || date || type) as id, lcn_id,
-   location.description as locn, date, type, sum(value+tax) as amount
+   location.description as locn, invoice, date, type, sum(value+tax) as amount
    from stktran left join location on lcn_id=location.id where prt_id=?
    group by date - (date % 86400), lcn_id, type order by date desc`, id)
 
