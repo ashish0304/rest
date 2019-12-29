@@ -215,9 +215,17 @@ func prtpayments(c *gin.Context) {
 
 func acctrans(c *gin.Context) {
 	pmts := []Acctrans{}
+	cnt := false
+	var count int
 	acc, e0 := strconv.Atoi(c.Request.URL.Query().Get("acc"))
 	if e0 != nil {
 		acc = 0
+	}
+	cnt, _ = strconv.ParseBool(c.Request.URL.Query().Get("count"))
+	if cnt {
+		DB.QueryRow("select count(*) from pmttran where acc_id=?", acc).Scan(&count)
+		c.JSON(http.StatusOK, count)
+		return
 	}
 	offset, e1 := strconv.Atoi(c.Request.URL.Query().Get("offset"))
 	if e1 != nil {

@@ -1,20 +1,13 @@
+CREATE TABLE user (
+id VARCHAR(40) PRIMARY KEY,
+password VARCHAR(40),
+description VARCHAR(40) UNIQUE NOT NULL,
+access INTEGER DEFAULT 0);
 CREATE TABLE account (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 description VARCHAR(40) UNIQUE NOT NULL,
 balance DOUBLE DEFAULT 0);
-CREATE TABLE cheque(
-acc_id INTEGER references account(id),
-prt_id INTEGER references party(id),
-description CHAR,
-date INTEGER,
-amount DOUBLE NOT NULL,
-flag CHAR);
-CREATE TABLE inventory (
-id VARCHAR(40),
-lcn_id INTEGER NOT NULL REFERENCES location(id),
-itm_id INTEGER NOT NULL REFERENCES item(id),
-quantity INTEGER DEFAULT 0,
-primary key(id, lcn_id, itm_id));
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE item (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 description VARCHAR(40) UNIQUE NOT NULL,
@@ -36,8 +29,16 @@ id INTEGER PRIMARY KEY AUTOINCREMENT,
 description VARCHAR(40) UNIQUE NOT NULL,
 address VARCHAR(80),
 gstn CHAR(15),
-balance DOUBLE DEFAULT 0,
-chq_amt DOUBLE DEFAULT 0);
+balance DOUBLE DEFAULT 0, chq_amt DOUBLE DEFAULT 0);
+CREATE TABLE stock (
+lcn_id INTEGER  NOT NULL REFERENCES location(id),
+itm_id INTEGER  NOT NULL REFERENCES item(id),
+quantity INTEGER DEFAULT 0,
+qty_sold INTEGER DEFAULT 0,
+qty_recd INTEGER DEFAULT 0,
+qty_tsfr INTEGER DEFAULT 0,
+qty_adjt INTEGER DEFAULT 0,
+primary key(lcn_id, itm_id));
 CREATE TABLE pmttran (
 type CHAR NOT NULL,
 date INTEGER NOT NULL,
@@ -46,8 +47,14 @@ txn_id INTEGER  DEFAULT NULL,
 acc_id INTEGER  DEFAULT NULL REFERENCES account(id),
 amount DOUBLE NOT NULL,
 comment VARCHAR(40),
-usr_id VARCHAR(40) REFERENCES user(id),
+usr_id VARCHAR(40) DEFAULT NULL REFERENCES user(id),
 flag CHAR);
+CREATE TABLE inventory (
+id VARCHAR(40),
+lcn_id INTEGER NOT NULL REFERENCES location(id),
+itm_id INTEGER NOT NULL REFERENCES item(id),
+quantity INTEGER DEFAULT 0,
+primary key(id, lcn_id, itm_id));
 CREATE TABLE stktran (
 id INTEGER NOT NULL,
 type CHAR NOT NULL,
@@ -60,20 +67,13 @@ rate DOUBLE DEFAULT 0,
 value DOUBLE DEFAULT 0,
 tax DOUBLE DEFAULT 0,
 cost DOUBLE DEFAULT 0,
-usr_id VARCHAR(10) REFERENCES user(id),
-invoice CHAR,
+usr_id VARCHAR(10) DEFAULT NULL REFERENCES user(id),
+flag CHAR, invoice CHAR);
+CREATE TABLE cheque(
+acc_id INTEGER references account(id),
+prt_id INTEGER references party(id),
+description CHAR,
+date INTEGER,
+amount DOUBLE NOT NULL,
 flag CHAR);
-CREATE TABLE stock (
-lcn_id INTEGER  NOT NULL REFERENCES location(id),
-itm_id INTEGER  NOT NULL REFERENCES item(id),
-quantity INTEGER DEFAULT 0,
-qty_sold INTEGER DEFAULT 0,
-qty_recd INTEGER DEFAULT 0,
-qty_tsfr INTEGER DEFAULT 0,
-qty_adjt INTEGER DEFAULT 0,
-primary key(lcn_id, itm_id));
-CREATE TABLE user (
-id VARCHAR(40) PRIMARY KEY,
-password VARCHAR(40),
-description VARCHAR(40) UNIQUE NOT NULL,
-access INTEGER DEFAULT 0);
+CREATE TABLE android_metadata (locale TEXT);
