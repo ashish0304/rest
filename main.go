@@ -26,7 +26,7 @@ func main() {
 
 	sql.Register("sqlite3WithHooks", sqlhooks.Wrap(&sqlite3.SQLiteDriver{}, &Hooks{}))
 
-	DB = sqlx.MustConnect("sqlite3WithHooks", "/sdcard/myshop/myshop.db3")
+	DB = sqlx.MustConnect("sqlite3WithHooks", "../myshop.db3")
 	defer DB.Close()
 
 	f, err := os.OpenFile(os.Getenv("HOME")+"/myshop.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
