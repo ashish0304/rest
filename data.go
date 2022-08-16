@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"strings"
+	"os/exec"
 )
 
 var DB *sqlx.DB
@@ -21,6 +23,16 @@ func (h *Hooks) After(ctx context.Context, query string, args ...interface{}) (c
 		logSql.Println(args)
 	}
 	return ctx, nil
+}
+
+func backup(c *gin.Context) {
+    cmd := exec.Command("bkp")
+    err := cmd.Run()
+    if err != nil {
+        c.JSON(http.StatusBadRequest, err)
+    } else {
+        c.Status(200)
+    }
 }
 
 func dumplog(c *gin.Context) {

@@ -91,6 +91,7 @@ func main() {
 	authAdmin.PUT("/account", accountupdate)
 	authAdmin.PUT("/chequehonor", chequehonor)
 	authAdmin.PUT("/chequecancel", chequecancel)
+	authAdmin.GET("/backup", backup)
 	authAdmin.GET("/log", dumplog)
 
 	Router.POST("/api/login", login)
