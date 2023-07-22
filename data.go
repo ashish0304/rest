@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"net/http"
+	"os/exec"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	"strings"
-	"os/exec"
 )
 
 var DB *sqlx.DB
@@ -20,19 +21,19 @@ func (h *Hooks) Before(ctx context.Context, query string, args ...interface{}) (
 func (h *Hooks) After(ctx context.Context, query string, args ...interface{}) (context.Context, error) {
 	logSql.Println(strings.Join(strings.Fields(query), " "))
 	if len(args) > 0 {
-		logSql.Println(args)
+		logSql.Println(args...)
 	}
 	return ctx, nil
 }
 
 func backup(c *gin.Context) {
-    cmd := exec.Command("bkp")
-    err := cmd.Run()
-    if err != nil {
-        c.JSON(http.StatusBadRequest, err)
-    } else {
-        c.Status(200)
-    }
+	cmd := exec.Command("bkp")
+	err := cmd.Run()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+	} else {
+		c.Status(200)
+	}
 }
 
 func dumplog(c *gin.Context) {

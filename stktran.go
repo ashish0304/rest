@@ -3,8 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Stock struct {
@@ -69,7 +70,7 @@ func stktran(c *gin.Context) {
 		return
 	}
 
-	for i, _ := range stktran.Stocks {
+	for i := range stktran.Stocks {
 		if stktran.Type == "T" || stktran.Type == "A" {
 			stktran.Stocks[i].Rate = 0
 			stktran.Stocks[i].Tax = 0
